@@ -1,0 +1,229 @@
+/* Era cards (plain CSS, "ec-" prefix: the Tailwind loader in next.config.ts
+   doesn't support CSS modules). The one place the app has character. Styles from the Visual direction spec.
+   Hard rule 5: they evoke a decade, never a brand. Names are plain text in the era's type. */
+
+.ec-card {
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(18, 50, 74, 0.12);
+}
+
+.ec-panel {
+  position: relative;
+  padding: 22px 20px 18px;
+  min-height: 116px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.ec-mini .ec-panel {
+  padding: 14px 14px 12px;
+  min-height: 0;
+}
+
+.ec-name {
+  position: relative;
+  margin: 0;
+  font-weight: 400;
+  line-height: 1.08;
+  white-space: nowrap;
+  overflow-wrap: anywhere;
+}
+
+.ec-name.ec-wrap {
+  white-space: normal;
+}
+
+.ec-meta {
+  position: relative;
+  margin: 8px 0 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.ec-mini .ec-meta {
+  margin-top: 4px;
+  font-size: 11px;
+}
+
+/* ---- Now bar: the same in every era ---- */
+.ec-now {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid #e3e9ed;
+  background: #fff;
+}
+
+.ec-now-tag {
+  flex: none;
+  background: #12324a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 3px 7px;
+  border-radius: 4px;
+}
+
+.ec-now-text {
+  color: #12324a;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* ---- 1970s ---- */
+.ec-e1970s {
+  background: #4e3220;
+  padding-top: 34px;
+}
+.ec-e1970s::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 18px;
+  background: linear-gradient(#e8a33d 0 6px, #d9692b 6px 12px, #a8322a 12px 18px);
+}
+.ec-mini .ec-e1970s {
+  padding-top: 24px;
+}
+.ec-e1970s .ec-name {
+  color: #f6e7c8;
+}
+.ec-e1970s .ec-meta {
+  color: #e8a33d;
+}
+
+/* ---- 1980s ---- */
+.ec-e1980s {
+  background: #141018;
+  border-bottom: 4px solid #3fe0d0;
+}
+.ec-e1980s .ec-name {
+  color: #ff6fb5;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(255, 111, 181, 0.7);
+}
+.ec-e1980s .ec-meta {
+  color: #3fe0d0;
+}
+
+/* ---- 1990s ---- */
+.ec-e1990s {
+  background: #3b2a6b;
+}
+.ec-squiggle {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  width: 64px;
+  height: 18px;
+}
+.ec-dot {
+  position: absolute;
+  top: 34px;
+  right: 30px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ff5da2;
+}
+.ec-mini .ec-squiggle {
+  top: 8px;
+  right: 10px;
+  width: 40px;
+}
+.ec-mini .ec-dot {
+  top: 24px;
+  right: 18px;
+  width: 8px;
+  height: 8px;
+}
+.ec-e1990s .ec-name {
+  color: #ffe45c;
+}
+.ec-e1990s .ec-meta {
+  color: #ffffff;
+}
+
+/* ---- 2000s ---- */
+.ec-e2000s {
+  background: #1f5fbf;
+}
+.ec-e2000s::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 34px;
+  background: rgba(255, 255, 255, 0.16);
+}
+.ec-e2000s .ec-name {
+  color: #ffffff;
+  font-weight: 800;
+  font-style: italic;
+}
+.ec-e2000s .ec-meta {
+  color: #cfe2ff;
+}
+
+/* ---- 2010s ---- */
+.ec-e2010s {
+  background: #f7f5f0;
+  border: 1px solid #dad6cc;
+  border-bottom: 0;
+}
+.ec-e2010s .ec-name {
+  color: #2b2b2b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+}
+.ec-e2010s .ec-meta {
+  color: #4e6b5e;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ec-e2010s .ec-meta::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7fbfa4;
+}
+
+/* ---- Fallback: no era set (also the 1960s and earlier, and the 2020s) ---- */
+.ec-fallback {
+  background-color: #8e3a2a;
+  background-image:
+    repeating-linear-gradient(to bottom, transparent 0 20px, rgba(0, 0, 0, 0.18) 20px 22px),
+    repeating-linear-gradient(to right, transparent 0 44px, rgba(0, 0, 0, 0.12) 44px 46px);
+}
+.ec-fallback .ec-name {
+  color: rgba(243, 230, 207, 0.62);
+  text-transform: uppercase;
+}
+.ec-fallback .ec-meta {
+  color: rgba(243, 230, 207, 0.8);
+}
+.ec-used-to-be {
+  position: relative;
+  margin: 0 0 6px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgba(243, 230, 207, 0.8);
+}
+
+/* The mini card is shorter, so its 2000s gloss band is too. */
+.ec-mini .ec-e2000s::before {
+  height: 18px;
+}

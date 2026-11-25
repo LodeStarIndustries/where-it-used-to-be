@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { game } from "@config/game";
-import { daysBetween, puzzleDateFor, puzzleNumberFor } from "./puzzle-date";
-
-const addDays = (date: string, n: number) => {
-  const d = new Date(`${date}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-};
+import { addDays, daysBetween, nextPuzzleAt, puzzleDateFor, puzzleNumberFor } from "./puzzle-date";
 
 // Atlantic Time: AST is UTC-4, ADT is UTC-3.
 describe("puzzleDateFor (America/Moncton)", () => {
@@ -50,5 +44,24 @@ describe("puzzle numbers", () => {
     expect(puzzleNumberFor(addDays(first, 1))).toBe(2);
     expect(puzzleNumberFor(addDays(first, 365))).toBe(366);
     expect(puzzleNumberFor(addDays(first, -1))).toBe(0);
+  });
+});
+
+describe("next puzzle countdown", () => {
+  it("is local midnight in winter (04:00 UTC)", () => {
+    expect(nextPuzzleAt(new Date("2026-12-05T14:00:00Z")).toISOString()).toBe("2026-12-06T04:00:00.000Z");
+    // 23:59 AST is already the next UTC day.
+    expect(nextPuzzleAt(new Date("2026-12-06T03:59:00Z")).toISOString()).toBe("2026-12-06T04:00:00.000Z");
+  });
+
+  it("is local midnight in summer (03:00 UTC)", () => {
+    expect(nextPuzzleAt(new Date("2027-07-01T15:00:00Z")).toISOString()).toBe("2027-07-02T03:00:00.000Z");
+  });
+
+  it("handles both daylight-saving change days", () => {
+    // Clocks spring forward on 2027-03-14: that day starts in AST, the next in ADT.
+    expect(nextPuzzleAt(new Date("2027-03-14T12:00:00Z")).toISOString()).toBe("2027-03-15T03:00:00.000Z");
+    // Clocks fall back on 2026-11-01: that day starts in ADT, the next in AST.
+    expect(nextPuzzleAt(new Date("2026-11-01T12:00:00Z")).toISOString()).toBe("2026-11-02T04:00:00.000Z");
   });
 });

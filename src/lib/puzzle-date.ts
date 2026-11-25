@@ -23,6 +23,27 @@ export function daysBetween(from: string, to: string): number {
   return Math.round((b - a) / 86_400_000);
 }
 
+/** The calendar date `n` days after `date` (YYYY-MM-DD). */
+export function addDays(date: string, n: number): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * The moment the next puzzle starts: midnight in America/Moncton. Atlantic Time is
+ * UTC-4 or UTC-3, so it's 03:00 or 04:00 UTC on the next date; pick whichever
+ * is the real rollover.
+ */
+export function nextPuzzleAt(now: Date = new Date()): Date {
+  const tomorrow = addDays(puzzleDateFor(now), 1);
+  for (const hoursUtc of [3, 4]) {
+    const at = new Date(`${tomorrow}T0${hoursUtc}:00:00Z`);
+    if (puzzleDateFor(at) === tomorrow && puzzleDateFor(new Date(at.getTime() - 1)) !== tomorrow) return at;
+  }
+  return new Date(`${tomorrow}T04:00:00Z`);
+}
+
 /** Puzzle number for a date: #1 on game.firstPuzzleDate. Zero or less means before launch. */
 export function puzzleNumberFor(date: string): number {
   return daysBetween(game.firstPuzzleDate, date) + 1;

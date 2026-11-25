@@ -242,7 +242,12 @@ Vercel sets `VERCEL_ENV` itself; the app uses it to tell production from preview
 | `npm run db:push:prod` | Apply new migrations to production (asks first) |
 | `npm run db:fixtures` | (Re)load `TEST:` fixtures into dev |
 | `npm run db:advisors` | Supabase's own security and performance checks, on dev |
+| `npm run puzzles:generate` | Make daily puzzles in **dev** from today for 30 days (`-- 7` for a week), skipping days that have one. Refuses to run against production |
+
+## Checking the era cards
+
+Outside production, <http://localhost:3000/dev/era-cards> (and the same path on a preview URL) shows all six era card styles, full and mini, with a short and a very long name. In production that page doesn't exist.
 
 ## How rate limiting works
 
-Guesses and submissions are counted in Postgres by `public.rate_limit_hit(key, window_seconds, max)`, which only the server can call. Limits live in `config/game.ts` under `rateLimits`. Sign-in emails are also capped by Supabase Auth's own limits (**Authentication → Rate Limits**). The routes that use these arrive in Milestones 2 to 4.
+Guesses and submissions are counted in Postgres by `public.rate_limit_hit(key, window_seconds, max)`, which only the server can call. Limits live in `config/game.ts` under `rateLimits`. Sign-in emails are also capped by Supabase Auth's own limits (**Authentication → Rate Limits**). Guesses are limited per device in `/api/guess`; submissions arrive in Milestone 4.
