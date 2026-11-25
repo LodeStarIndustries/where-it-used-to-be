@@ -187,7 +187,23 @@ In each project, **Authentication → Emails → Templates → Magic Link**:
 <p>If you didn't ask for this, you can ignore this email.</p>
 ```
 
-Supabase's built-in email sender only allows a few emails an hour and is meant for testing. Before launch, set up custom SMTP under **Authentication → Emails → SMTP Settings** (open question for Mike: which email provider).
+Supabase's built-in email sender only allows a few emails an hour and is meant for testing. Before you invite testers, send through the game's own Gmail account (`whereitusedtobegame@gmail.com`) instead:
+
+1. That Google account needs 2-Step Verification on. Then create an **App password** at [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords), named `Supabase`. Keep it in your password manager; never put it in `.env.local` or the repo.
+2. In each Supabase project: **Authentication → Emails → SMTP Settings**, turn on custom SMTP:
+
+| Field | Value |
+| --- | --- |
+| Sender email | `whereitusedtobegame@gmail.com` |
+| Sender name | `Where It Used To Be` |
+| Host | `smtp.gmail.com` |
+| Port | `465` |
+| Username | `whereitusedtobegame@gmail.com` |
+| Password | the app password |
+
+3. Under **Authentication → Rate Limits**, raise the email limit to about 30 an hour.
+
+Gmail allows about 500 emails a day, plenty for testing. If the game outgrows that, switch to a sending service; only these settings change.
 
 ## 12. Make yourself an admin (after you've signed in once)
 

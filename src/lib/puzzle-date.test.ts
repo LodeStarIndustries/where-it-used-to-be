@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { game } from "@config/game";
 import { daysBetween, puzzleDateFor, puzzleNumberFor } from "./puzzle-date";
+
+const addDays = (date: string, n: number) => {
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
 
 // Atlantic Time: AST is UTC-4, ADT is UTC-3.
 describe("puzzleDateFor (America/Moncton)", () => {
@@ -37,9 +44,11 @@ describe("puzzle numbers", () => {
     expect(daysBetween("2027-03-13", "2027-03-15")).toBe(2);
   });
 
-  it("is #1 on launch day", () => {
-    expect(puzzleNumberFor("2026-12-17")).toBe(1);
-    expect(puzzleNumberFor("2026-12-18")).toBe(2);
-    expect(puzzleNumberFor("2027-12-17")).toBe(366);
+  it("is #1 on the first puzzle date and counts up by calendar day", () => {
+    const first = game.firstPuzzleDate;
+    expect(puzzleNumberFor(first)).toBe(1);
+    expect(puzzleNumberFor(addDays(first, 1))).toBe(2);
+    expect(puzzleNumberFor(addDays(first, 365))).toBe(366);
+    expect(puzzleNumberFor(addDays(first, -1))).toBe(0);
   });
 });

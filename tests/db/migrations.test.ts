@@ -182,6 +182,37 @@ describe("migrations on a fresh database", () => {
     });
   });
 
+  describe("accounts", () => {
+    it("display names are unique, ignoring case and spaces", async () => {
+      // PLAYER is already "Pat" (set in the RLS tests above).
+      await expect(
+        db.exec(`update public.profiles set display_name = ' pAT ' where id = '${OTHER}'`),
+      ).rejects.toThrow(/profiles_display_name_unique/);
+      await db.exec(`update public.profiles set display_name = 'Pat 2' where id = '${OTHER}'`);
+      // Any number of players can still have no name yet.
+      const { rows } = await db.query<{ n: number }>(
+        "select count(*)::int as n from public.profiles where display_name is null",
+      );
+      expect(rows[0].n).toBeGreaterThan(0);
+    });
+
+    it("deleting a group owner's account deletes their group and its memberships", async () => {
+      const owner = "66666666-6666-4666-8666-666666666666";
+      await db.exec(`
+        insert into auth.users (id) values ('${owner}');
+        insert into public.groups (id, name, invite_code, owner_id)
+          values ('77777777-7777-4777-8777-777777777777', 'TEST group', 'ABCD1234', '${owner}');
+        insert into public.group_members (group_id, user_id) values
+          ('77777777-7777-4777-8777-777777777777', '${owner}'),
+          ('77777777-7777-4777-8777-777777777777', '${ADMIN}');
+        delete from auth.users where id = '${owner}';`);
+      const { rows } = await db.query<{ g: number; m: number }>(`
+        select (select count(*) from public.groups where id = '77777777-7777-4777-8777-777777777777')::int as g,
+               (select count(*) from public.group_members where group_id = '77777777-7777-4777-8777-777777777777')::int as m`);
+      expect(rows[0]).toEqual({ g: 0, m: 0 });
+    });
+  });
+
   describe("place and puzzle rules", () => {
     it("a place on a site without coordinates cannot go live", async () => {
       await expect(

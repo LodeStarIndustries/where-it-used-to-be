@@ -36,7 +36,7 @@ export interface PinBand {
 export interface GameConfig {
   /** Hard rule 1: the puzzle date is always the calendar date in this zone. */
   timeZone: "America/Moncton";
-  /** Puzzle #1 is on this date (default: launch day). Day numbers count up from it. */
+  /** Puzzle #1 is on this date. No fixed launch date (Mike, 2026-11-25): it counts from the first day of testing. Change it before going public if you want the public to start at #1. */
   firstPuzzleDate: string;
   roundsPerDay: 5;
   maxPointsPerRound: 200;
@@ -96,7 +96,7 @@ export interface GameConfig {
 
 export const game = {
   timeZone: "America/Moncton",
-  firstPuzzleDate: "2026-12-17",
+  firstPuzzleDate: "2026-11-25",
   roundsPerDay: 5,
   maxPointsPerRound: 200,
   dailyMix: ["pin", "name", "pin", "name", "pin"],
