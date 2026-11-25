@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/*
+ * App chrome tokens from the Visual direction section.
+ * Use them as Tailwind utilities: bg-background, bg-surface, text-ink, text-secondary,
+ * text-body, border-divider, bg-accent, rounded-card, shadow-card, h-button, and so on.
+ * The app has one calm light theme; the character lives in the era cards.
+ */
+@theme {
+  --color-background: #eef2f4;
+  --color-surface: #ffffff;
+  --color-ink: #12324a;
+  --color-secondary: #5c7182;
+  --color-body: #3b5163;
+  --color-divider: #d3dce2;
+  --color-divider-soft: #e3e9ed;
+  --color-accent: #b5452f;
+  --color-player-pin: #12324a;
+  --color-chip: #f8e6d8;
+  --color-chip-ink: #8a3e14;
+
+  --color-map-land: #eef2f4;
+  --color-map-road: #ffffff;
+  --color-map-park: #d5e6d3;
+  --color-map-water: #bfd6e3;
+  --color-map-label: #5c7182;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --text-score: 42px;
+  --text-score--line-height: 1;
+  --text-label: 11px;
+  --text-label--letter-spacing: 0.08em;
+
+  --radius-card: 14px;
+  --radius-sheet: 24px;
+  --radius-button: 14px;
+  --radius-tag: 4px;
+
+  --spacing-button: 52px;
+
+  --shadow-card: 0 1px 3px rgba(18, 50, 74, 0.12);
+  --shadow-sheet: 0 -4px 20px rgba(18, 50, 74, 0.1);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    background: var(--color-background);
+    color: var(--color-body);
+    font-family: var(--font-sans);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility label-caps {
+  font-size: var(--text-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--text-label--letter-spacing);
+}

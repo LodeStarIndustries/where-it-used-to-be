@@ -1,0 +1,28 @@
+import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+export const metadata: Metadata = {
+  title: "Where It Used To Be",
+  description: "A free daily map game about the Saint John businesses that are gone.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#EEF2F4",
+  width: "device-width",
+  initialScale: 1,
+};
+
+export default function RootLayout({ children }: LayoutProps<"/">) {
+  return (
+    <html lang="en-CA" className={`${inter.variable} h-full antialiased`}>
+      <body className="min-h-full flex flex-col">{children}</body>
+    </html>
+  );
+}
