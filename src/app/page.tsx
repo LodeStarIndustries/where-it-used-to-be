@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { HomeStatus } from "@/components/home/HomeStatus";
+import { pillClass } from "@/components/ui/Page";
 import { getProfile } from "@/lib/account/data";
 import { currentUserId } from "@/lib/auth/session";
 import { checkHealth } from "@/lib/health";
@@ -39,6 +40,20 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
   );
 }
 
+/** Next to How to play in the illustration: Sign in, or Profile once signed in. */
+async function AccountPill() {
+  const userId = await currentUserId();
+  return userId ? (
+    <Link href="/profile" className={pillClass}>
+      Profile
+    </Link>
+  ) : (
+    <Link href="/sign-in" className={pillClass}>
+      Sign in
+    </Link>
+  );
+}
+
 /** Sign in, or the player's profile once signed in. */
 async function AccountLink() {
   const userId = await currentUserId();
@@ -58,7 +73,13 @@ export default function Home() {
     <main className="mx-auto flex w-full max-w-[430px] flex-1 flex-col px-4 pb-10 min-[431px]:pt-6">
       <h1 className="sr-only">Where It Used To Be: a daily map game about the Saint John businesses that are gone</h1>
 
-      <HomeStatus />
+      <HomeStatus
+        account={
+          <Suspense fallback={<span className={`${pillClass} invisible`} aria-hidden="true">Sign in</span>}>
+            <AccountPill />
+          </Suspense>
+        }
+      />
 
       <nav aria-label="More" className="mt-6">
         <ul className="divide-y divide-divider-soft rounded-card bg-surface shadow-card">

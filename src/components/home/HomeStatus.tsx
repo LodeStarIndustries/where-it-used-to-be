@@ -7,6 +7,7 @@ import { Countdown } from "@/components/game/bits";
 import { fetchToday } from "@/lib/game/client";
 import type { TodayResponse } from "@/lib/game/types";
 import hero from "@/assets/home-hero.webp";
+import { pillClass } from "@/components/ui/Page";
 
 function formatDate(isoDate: string) {
   return new Intl.DateTimeFormat("en-CA", {
@@ -18,7 +19,7 @@ function formatDate(isoDate: string) {
 }
 
 /** The illustrated intro with the Play button, then the day, date, streak and countdown. */
-export function HomeStatus() {
+export function HomeStatus({ account }: { account: React.ReactNode }) {
   const [today, setToday] = useState<TodayResponse | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -64,12 +65,12 @@ export function HomeStatus() {
               )}
             </Link>
           )}
-          <Link
-            href="/how-to-play"
-            className="mx-auto flex h-11 items-center justify-center rounded-full border-2 border-ink bg-surface px-6 text-[15px] font-semibold text-ink shadow-card"
-          >
-            How to play
-          </Link>
+          <div className="flex justify-center gap-2">
+            <Link href="/how-to-play" className={pillClass}>
+              How to play
+            </Link>
+            {account}
+          </div>
         </div>
       </section>
 

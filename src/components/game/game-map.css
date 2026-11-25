@@ -1,0 +1,36 @@
+/*
+ * Map pins and controls. Kept out of globals.css on purpose: a Vercel build once
+ * dropped plain rules placed after the Tailwind output there, which made the
+ * pins invisible. This file loads only with the map.
+ */
+/* Map pins (MapLibre markers). A teardrop whose point sits on the spot. */
+.wiutb-marker {
+  width: 36px;
+  height: 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  cursor: grab;
+}
+.wiutb-pin {
+  width: 26px;
+  height: 26px;
+  margin-top: 1px;
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 2px 6px rgba(18, 50, 74, 0.35);
+}
+.wiutb-pin-player {
+  background: var(--color-player-pin, #12324a);
+}
+.wiutb-pin-site {
+  background: var(--color-accent, #b5452f);
+}
+
+/* Keep the map attribution visible above the round card or reveal sheet. */
+.maplibregl-map .maplibregl-ctrl-bottom-right,
+.maplibregl-map .maplibregl-ctrl-bottom-left {
+  bottom: var(--map-bottom, 0px);
+  transition: bottom 0.2s;
+}

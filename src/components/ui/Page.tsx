@@ -50,3 +50,7 @@ export const primaryButtonClass =
 
 export const secondaryButtonClass =
   "flex h-button w-full items-center justify-center rounded-button border border-divider bg-surface px-4 text-[15px] font-semibold text-ink disabled:opacity-50";
+
+/** The small white buttons under Play on the home screen. */
+export const pillClass =
+  "flex h-11 min-w-0 items-center justify-center rounded-full border-2 border-ink bg-surface px-5 text-[15px] font-semibold text-ink shadow-card";

@@ -1,6 +1,7 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
+import "./game-map.css";
 import { getVersion, LngLatBounds, Map as MapLibre, Marker, setWorkerUrl, type GeoJSONSource } from "maplibre-gl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { game } from "@config/game";
