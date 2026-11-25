@@ -40,9 +40,9 @@ export default function PrivacyPage() {
         </p>
         <h2 className="pt-2 text-[18px] font-bold text-ink">Visit counts</h2>
         <p>
-          We count visits with Vercel Web Analytics, which our hosting provider runs. It uses no cookies and doesn&apos;t
-          identify you: it records the pages viewed and general details like device type, browser and country, so we can
-          see how the game is used.
+          We count visits with Vercel Web Analytics and Speed Insights, run by our hosting provider. They use no cookies
+          and don&apos;t identify you: they record the pages viewed, how quickly pages load, and general details like
+          device type, browser and country, so we can see how the game is used and keep it fast.
         </p>
         <h2 className="pt-2 text-[18px] font-bold text-ink">No ads</h2>
         <p>There are no ads, and we don&apos;t sell or share your information.</p>
