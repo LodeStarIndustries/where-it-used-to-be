@@ -38,8 +38,14 @@ export default function PrivacyPage() {
           Delete your account from your profile. It removes your profile, your signed-in results, your group
           memberships and any groups you own.
         </p>
-        <h2 className="pt-2 text-[18px] font-bold text-ink">No ads or tracking</h2>
-        <p>There are no ads and no third-party tracking.</p>
+        <h2 className="pt-2 text-[18px] font-bold text-ink">Visit counts</h2>
+        <p>
+          We count visits with Vercel Web Analytics, which our hosting provider runs. It uses no cookies and doesn&apos;t
+          identify you: it records the pages viewed and general details like device type, browser and country, so we can
+          see how the game is used.
+        </p>
+        <h2 className="pt-2 text-[18px] font-bold text-ink">No ads</h2>
+        <p>There are no ads, and we don&apos;t sell or share your information.</p>
       </div>
       <p className="mt-8 text-[12px] text-secondary">
         Map data © OpenStreetMap contributors, served by OpenFreeMap with OpenMapTiles.
