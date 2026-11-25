@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { GeneratedRound } from "./generator";
-import type { GameStore, PlaceWithSite, StoredPlay, StoredRound } from "./store";
+import type { GameStore, Owner, PlaceWithSite, StoredPlay, StoredRound } from "./store";
 import type { Source } from "./types";
 
 // Reads and writes game data with the server's secret key (Row Level Security is
@@ -38,6 +38,9 @@ const roundFromRow = (r: RoundRow): StoredRound => ({
   distanceM: r.distance_m,
   points: r.points,
 });
+
+const ownerColumn = (owner: Owner): ["user_id" | "device_id", string] =>
+  "userId" in owner ? ["user_id", owner.userId] : ["device_id", owner.deviceId];
 
 function check<T>(result: { data: T; error: { message: string; code?: string } | null }, what: string): T {
   if (result.error) throw new Error(`${what}: ${result.error.message}`);
@@ -95,9 +98,10 @@ export function supabaseGameStore(db: SupabaseClient): GameStore {
       }));
     },
 
-    async getDevicePlay(deviceId, date) {
+    async getPlay(owner, date) {
+      const [column, id] = ownerColumn(owner);
       const row = check(
-        await db.from("plays").select(playSelect).eq("device_id", deviceId).eq("puzzle_date", date).maybeSingle(),
+        await db.from("plays").select(playSelect).eq(column, id).eq("puzzle_date", date).maybeSingle(),
         "Reading the play",
       );
       return row ? toPlay(row) : null;
@@ -110,16 +114,20 @@ export function supabaseGameStore(db: SupabaseClient): GameStore {
       );
     },
 
-    async startPlay(deviceId, date) {
-      const inserted = await db
-        .from("plays")
-        .insert({ device_id: deviceId, puzzle_date: date })
-        .select(playSelect)
-        .single();
+    async startPlay(deviceId, userId, date) {
+      const owner: Owner = userId ? { userId } : { deviceId };
+      const insert = (device: string | null) =>
+        db.from("plays").insert({ device_id: device, user_id: userId, puzzle_date: date }).select(playSelect).single();
+      let inserted = await insert(deviceId);
+      // A signed-in player on a device that already has a play that day (a guest
+      // play the account's play outranked, or someone else's): record no device.
+      if (userId && inserted.error?.code === "23505" && inserted.error.message.includes("device")) {
+        inserted = await insert(null);
+      }
       if (!inserted.error) return toPlay(inserted.data);
       if (inserted.error.code !== "23505") throw new Error(`Starting the play: ${inserted.error.message}`);
       // Another request started it first.
-      const existing = await this.getDevicePlay(deviceId, date);
+      const existing = await this.getPlay(owner, date);
       if (!existing) throw new Error("Starting the play: conflict but no play found");
       return existing;
     },
@@ -147,18 +155,35 @@ export function supabaseGameStore(db: SupabaseClient): GameStore {
       );
     },
 
-    async completedDates(deviceId) {
+    async completedDates(owner) {
+      const [column, id] = ownerColumn(owner);
       const rows = check(
         await db
           .from("plays")
           .select("puzzle_date")
-          .eq("device_id", deviceId)
+          .eq(column, id)
           .not("completed_at", "is", null)
           .order("puzzle_date", { ascending: false })
           .limit(400),
         "Reading the streak",
       );
       return (rows ?? []).map((r) => r.puzzle_date as string);
+    },
+
+    async linkDevice(deviceId, userId) {
+      check(await db.rpc("link_device", { p_device: deviceId, p_user: userId }), "Linking the device");
+    },
+
+    async refreshStreaks(userId) {
+      check(await db.rpc("refresh_streaks", { p_user: userId }), "Updating streaks");
+    },
+
+    async rankOn(userId, date) {
+      const rows = check(
+        await db.rpc("leaderboard_day", { p_date: date, p_viewer: userId, p_group: null, p_limit: 0 }),
+        "Reading the rank",
+      ) as { rank: number; is_me: boolean }[] | null;
+      return rows?.find((r) => r.is_me)?.rank ?? null;
     },
 
     async rateLimit(key, windowSeconds, max) {

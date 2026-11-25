@@ -6,7 +6,7 @@ import { game } from "@config/game";
 import { daysBetween, puzzleDateFor, puzzleNumberFor } from "@/lib/puzzle-date";
 import { distanceMeters, streetFromAddress } from "./geo";
 import { namePoints, pinPoints, verdictFor } from "./scoring";
-import type { GameStore, PlaceWithSite, StoredPlay, StoredPuzzle, StoredRound } from "./store";
+import type { GameStore, Owner, PlaceWithSite, StoredPlay, StoredPuzzle, StoredRound } from "./store";
 import type { Answer, GuessInput, GuessResponse, PlayableRound, RoundResult, TodayResponse } from "./types";
 
 /** Shared by every player: a stable order for a name round's four choices. */
@@ -94,8 +94,24 @@ export function streakFrom(completedDates: readonly string[], today: string): nu
   return streak;
 }
 
-async function deviceStreak(store: GameStore, deviceId: string | null, today: string) {
-  return deviceId ? streakFrom(await store.completedDates(deviceId), today) : 0;
+/** Who is playing: a guest's device, and the account if they're signed in. */
+export interface Player {
+  deviceId: string | null;
+  userId?: string | null;
+}
+
+const asPlayer = (who: Player | string | null): Player =>
+  typeof who === "string" || who === null ? { deviceId: who, userId: null } : who;
+
+/** A signed-in player's plays belong to the account; a guest's to the device. */
+function ownerOf(player: Player): Owner | null {
+  if (player.userId) return { userId: player.userId };
+  if (player.deviceId) return { deviceId: player.deviceId };
+  return null;
+}
+
+async function streakOf(store: GameStore, owner: Owner | null, today: string) {
+  return owner ? streakFrom(await store.completedDates(owner), today) : 0;
 }
 
 function resultsFor(play: StoredPlay | null, puzzle: StoredPuzzle, places: Map<string, PlaceWithSite>) {
@@ -105,22 +121,32 @@ function resultsFor(play: StoredPlay | null, puzzle: StoredPuzzle, places: Map<s
     .map((r) => toResult(r, places.get(puzzle.rounds[r.roundIndex].place_id)!));
 }
 
-export async function getToday(store: GameStore, deviceId: string | null, now = new Date()): Promise<TodayResponse> {
+export async function getToday(store: GameStore, who: Player | string | null, now = new Date()): Promise<TodayResponse> {
+  const player = asPlayer(who);
   const date = puzzleDateFor(now);
   const number = puzzleNumberFor(date);
+  const signedIn = Boolean(player.userId);
+  // A signed-in player's guest plays on this device move to the account first.
+  if (player.userId && player.deviceId) await store.linkDevice(player.deviceId, player.userId);
+  const owner = ownerOf(player);
+
   // Independent reads run together; each is a round trip to the database.
   const [puzzle, streak, play] = await Promise.all([
     store.getPuzzle(date),
-    deviceStreak(store, deviceId, date),
-    deviceId ? store.getDevicePlay(deviceId, date) : null,
+    streakOf(store, owner, date),
+    owner ? store.getPlay(owner, date) : null,
   ]);
 
   if (!puzzle) {
     await store.logAdminEvent("no_puzzle", `No puzzle exists for ${date}`, { date });
-    return { status: "none", date, number, streak };
+    return { status: "none", date, number, streak, signedIn };
   }
 
-  const places = await loadPlaces(store, puzzle);
+  const completed = play?.rounds.length === game.roundsPerDay;
+  const [places, rank] = await Promise.all([
+    loadPlaces(store, puzzle),
+    completed && player.userId ? store.rankOn(player.userId, date) : null,
+  ]);
   const results = resultsFor(play, puzzle, places);
   return {
     status: "ok",
@@ -129,8 +155,10 @@ export async function getToday(store: GameStore, deviceId: string | null, now = 
     rounds: toPlayableRounds(puzzle, places),
     results,
     totalPoints: results.reduce((sum, r) => sum + r.points, 0),
-    completed: results.length === game.roundsPerDay,
+    completed,
     streak,
+    signedIn,
+    rank,
   };
 }
 
@@ -147,10 +175,15 @@ function inBounds(lat: number, lng: number) {
 
 export async function submitGuess(
   store: GameStore,
-  deviceId: string,
+  who: Player | string,
   input: GuessInput,
   now = new Date(),
 ): Promise<GuessResponse> {
+  const player = asPlayer(who);
+  const deviceId = player.deviceId;
+  if (!deviceId) throw new Error("submitGuess needs a device ID");
+  const userId = player.userId ?? null;
+  const owner: Owner = userId ? { userId } : { deviceId };
   const today = puzzleDateFor(now);
   const age = daysBetween(input.puzzleDate, today);
   // Today's puzzle, or finishing yesterday's if it was started before midnight.
@@ -160,7 +193,7 @@ export async function submitGuess(
   const [allowed, puzzle, existing] = await Promise.all([
     store.rateLimit(`guess:${deviceId}`, 60, game.rateLimits.guessesPerMinutePerDevice),
     store.getPuzzle(input.puzzleDate),
-    store.getDevicePlay(deviceId, input.puzzleDate),
+    store.getPlay(owner, input.puzzleDate),
   ]);
   if (!allowed) return error("rate_limited", "Too many guesses. Wait a minute and try again.");
   if (!puzzle) return error("no_puzzle", "There's no puzzle for that day.");
@@ -209,7 +242,7 @@ export async function submitGuess(
   }
 
   if (!existing) await store.ensureDevice(deviceId);
-  const play = existing ?? (await store.startPlay(deviceId, input.puzzleDate));
+  const play = existing ?? (await store.startPlay(deviceId, userId, input.puzzleDate));
   const earlier = play.rounds.filter((r) => r.roundIndex < input.roundIndex).reduce((sum, r) => sum + r.points, 0);
   if (!(await store.insertRound(play.id, stored))) {
     return error("already_played", "You've already played that round.");
@@ -219,12 +252,10 @@ export async function submitGuess(
   const completed = input.roundIndex === game.roundsPerDay - 1;
   await store.updatePlay(play.id, total, completed ? now.toISOString() : null);
 
-  return {
-    status: "ok",
-    result: toResult(stored, place),
-    totalPoints: total,
-    completed,
-    // The streak only changes when a play finishes.
-    streak: await deviceStreak(store, deviceId, today),
-  };
+  if (completed && userId) await store.refreshStreaks(userId);
+  const [streak, rank] = await Promise.all([
+    streakOf(store, owner, today),
+    completed && userId ? store.rankOn(userId, input.puzzleDate) : null,
+  ]);
+  return { status: "ok", result: toResult(stored, place), totalPoints: total, completed, streak, rank };
 }

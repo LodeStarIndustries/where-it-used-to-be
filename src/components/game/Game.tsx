@@ -85,6 +85,7 @@ export function Game() {
           totalPoints: res.totalPoints,
           completed: res.completed,
           streak: res.streak,
+          rank: res.rank,
         });
         setRevealing(true);
       } else if (res.code === "already_played" || res.code === "out_of_order" || res.code === "wrong_day") {
@@ -147,7 +148,16 @@ export function Game() {
     );
   }
   if (showResults && ok) {
-    return <Results number={ok.number} results={ok.results} totalPoints={ok.totalPoints} streak={ok.streak} />;
+    return (
+      <Results
+        number={ok.number}
+        results={ok.results}
+        totalPoints={ok.totalPoints}
+        streak={ok.streak}
+        signedIn={ok.signedIn}
+        rank={ok.rank}
+      />
+    );
   }
   if (!ok) return null;
 

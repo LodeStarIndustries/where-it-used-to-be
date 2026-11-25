@@ -3,21 +3,42 @@
 import type { GuessInput, GuessResponse, TodayResponse } from "./types";
 
 const KEY = "wiutb.deviceId";
+/** Mirrors the device ID for the server (see DEVICE_COOKIE in lib/auth/session.ts). */
+const COOKIE = "wiutb_device";
 let memoryId: string | null = null;
 
-/** A random UUID kept in local storage, so a guest's plays are scored and stored on the server. */
+function writeCookie(id: string) {
+  const secure = location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${COOKIE}=${id}; Path=/; Max-Age=${60 * 60 * 24 * 400}; SameSite=Lax${secure}`;
+}
+
+/**
+ * A random UUID kept in local storage, so a guest's plays are scored and stored
+ * on the server. A cookie carries the same ID, so signing in can link them.
+ */
 export function deviceId(): string {
   try {
-    const existing = localStorage.getItem(KEY);
-    if (existing) return existing;
-    const id = crypto.randomUUID();
-    localStorage.setItem(KEY, id);
+    let id = localStorage.getItem(KEY);
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem(KEY, id);
+    }
+    if (!document.cookie.includes(`${COOKIE}=${id}`)) writeCookie(id);
     return id;
   } catch {
     // Private mode or blocked storage: still playable for this visit.
     memoryId ??= crypto.randomUUID();
     return memoryId;
   }
+}
+
+/** After signing out, this browser starts again as a new guest. */
+export function resetDeviceId() {
+  memoryId = null;
+  try {
+    localStorage.removeItem(KEY);
+  } catch {}
+  document.cookie = `${COOKIE}=; Path=/; Max-Age=0`;
 }
 
 const headers = () => ({ "x-device-id": deviceId(), "Content-Type": "application/json" });

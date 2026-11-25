@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { z } from "zod";
 import { game } from "@config/game";
+import { currentUserId } from "@/lib/auth/session";
 import { deviceIdFrom, gameStore, noStore, serverError } from "@/lib/game/server";
 import { submitGuess } from "@/lib/game/service";
 
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
   const store = gameStore();
   if (!store) return serverError(new Error("Supabase is not configured"));
   try {
-    const result = await submitGuess(store, deviceId, parsed.data);
+    const result = await submitGuess(store, { deviceId, userId: await currentUserId() }, parsed.data);
     const code = result.status === "error" ? (status[result.code] ?? 400) : 200;
     return Response.json(result, { status: code, headers: noStore });
   } catch (err) {

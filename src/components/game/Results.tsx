@@ -13,9 +13,12 @@ export interface ResultsProps {
   results: RoundResult[];
   totalPoints: number;
   streak: number;
+  signedIn: boolean;
+  /** Rank on today's public board (signed-in players with a display name). */
+  rank: number | null;
 }
 
-export function Results({ number, results, totalPoints, streak }: ResultsProps) {
+export function Results({ number, results, totalPoints, streak, signedIn, rank }: ResultsProps) {
   const [shared, setShared] = useState<"idle" | "copied" | "failed">("idle");
 
   async function share() {
@@ -109,10 +112,29 @@ export function Results({ number, results, totalPoints, streak }: ResultsProps) 
       </section>
 
       <section className="mt-4 rounded-card bg-surface p-4 shadow-card">
-        <p className="text-[14px] text-body">
-          Sign in to appear on the leaderboard and keep your streak on every device.{" "}
-          <span className="text-secondary">Coming soon.</span>
-        </p>
+        {signedIn ? (
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[15px] text-body">
+              {rank ? (
+                <>
+                  You&apos;re <strong className="text-ink">#{rank}</strong> today.
+                </>
+              ) : (
+                "You're on today's leaderboard."
+              )}
+            </p>
+            <Link href="/leaderboard" className="shrink-0 text-[14px] font-semibold text-ink underline underline-offset-2">
+              Leaderboard
+            </Link>
+          </div>
+        ) : (
+          <p className="text-[14px] text-body">
+            <Link href="/sign-in?next=/play" className="font-semibold text-ink underline underline-offset-2">
+              Sign in
+            </Link>{" "}
+            to appear on the leaderboard and keep your streak on every device. Today&apos;s score comes with you.
+          </p>
+        )}
       </section>
 
       <div className="mt-4">

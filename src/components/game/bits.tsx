@@ -17,14 +17,7 @@ export const categoryLabel: Record<Category, string> = {
 
 export const verdictLabel = (key: VerdictKey) => game.verdicts.find((v) => v.key === key)!.label;
 
-/** Round dots on the results screen, coloured like the share squares. */
-export const verdictColour: Record<VerdictKey, string> = {
-  lifer: "#3E8E5A",
-  knows: "#D9A815",
-  closeish: "#E07B24",
-  away: "#C0392B",
-  who: "#12324A",
-};
+export { verdictColour } from "@/lib/game/verdict-colours";
 
 export function Chip({ children }: { children: React.ReactNode }) {
   return (

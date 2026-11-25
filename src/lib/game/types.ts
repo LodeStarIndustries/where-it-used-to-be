@@ -68,8 +68,11 @@ export type TodayResponse =
       completed: boolean;
       /** Consecutive days with a finished play, ending today or yesterday. */
       streak: number;
+      signedIn: boolean;
+      /** Rank on today's public board, once a signed-in player has finished. */
+      rank: number | null;
     }
-  | { status: "none"; date: string; number: number; streak: number };
+  | { status: "none"; date: string; number: number; streak: number; signedIn: boolean };
 
 export interface GuessInput {
   puzzleDate: string;
@@ -80,7 +83,7 @@ export interface GuessInput {
 }
 
 export type GuessResponse =
-  | { status: "ok"; result: RoundResult; totalPoints: number; completed: boolean; streak: number }
+  | { status: "ok"; result: RoundResult; totalPoints: number; completed: boolean; streak: number; rank: number | null }
   | { status: "error"; code: GuessErrorCode; message: string };
 
 export type GuessErrorCode =

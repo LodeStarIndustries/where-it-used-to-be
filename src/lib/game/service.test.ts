@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { Category, Era } from "@config/game";
 import { generateDay } from "./generator";
 import { getToday, streakFrom, submitGuess } from "./service";
-import type { GameStore, PlaceWithSite, StoredPlay, StoredPuzzle, StoredRound } from "./store";
+import type { GameStore, Owner, PlaceWithSite, StoredPlay, StoredPuzzle, StoredRound } from "./store";
 import type { NameRound, PinRound } from "./types";
 
 const DEVICE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -40,7 +40,9 @@ function makePlaces(n: number): PlaceWithSite[] {
 class MemoryStore implements GameStore {
   puzzles = new Map<string, StoredPuzzle>();
   places: PlaceWithSite[];
-  plays = new Map<string, StoredPlay & { deviceId: string; date: string }>();
+  plays = new Map<string, StoredPlay & { deviceId: string | null; userId: string | null; date: string }>();
+  deviceUsers = new Map<string, string>();
+  refreshed: string[] = [];
   devices = new Set<string>();
   events: string[] = [];
   hits = new Map<string, number>();
@@ -53,18 +55,45 @@ class MemoryStore implements GameStore {
   async getPlaces(ids: string[]) {
     return this.places.filter((p) => ids.includes(p.id));
   }
-  async getDevicePlay(deviceId: string, date: string) {
-    return [...this.plays.values()].find((p) => p.deviceId === deviceId && p.date === date) ?? null;
+  private owns(p: { deviceId: string | null; userId: string | null }, owner: Owner) {
+    return "userId" in owner ? p.userId === owner.userId : p.deviceId === owner.deviceId;
+  }
+  async getPlay(owner: Owner, date: string) {
+    return [...this.plays.values()].find((p) => this.owns(p, owner) && p.date === date) ?? null;
   }
   async ensureDevice(deviceId: string) {
     this.devices.add(deviceId);
   }
-  async startPlay(deviceId: string, date: string) {
-    const existing = await this.getDevicePlay(deviceId, date);
+  async startPlay(deviceId: string, userId: string | null, date: string) {
+    const existing = await this.getPlay(userId ? { userId } : { deviceId }, date);
     if (existing) return existing;
-    const play = { id: `play-${this.plays.size + 1}`, deviceId, date, totalPoints: 0, completedAt: null, rounds: [] };
+    const deviceTaken = Boolean(await this.getPlay({ deviceId }, date));
+    const play = {
+      id: `play-${this.plays.size + 1}`,
+      deviceId: userId && deviceTaken ? null : deviceId,
+      userId,
+      date,
+      totalPoints: 0,
+      completedAt: null,
+      rounds: [],
+    };
     this.plays.set(play.id, play);
     return play;
+  }
+  async linkDevice(deviceId: string, userId: string) {
+    this.deviceUsers.set(deviceId, userId);
+    for (const p of this.plays.values()) {
+      if (p.deviceId === deviceId && !p.userId && !(await this.getPlay({ userId }, p.date))) p.userId = userId;
+    }
+  }
+  async refreshStreaks(userId: string) {
+    this.refreshed.push(userId);
+  }
+  async rankOn(userId: string, date: string) {
+    const done = [...this.plays.values()].filter((p) => p.date === date && p.userId && p.completedAt);
+    done.sort((a, b) => b.totalPoints - a.totalPoints);
+    const i = done.findIndex((p) => p.userId === userId);
+    return i < 0 ? null : i + 1;
   }
   async insertRound(playId: string, round: StoredRound) {
     const play = this.plays.get(playId)!;
@@ -77,8 +106,8 @@ class MemoryStore implements GameStore {
     play.totalPoints = totalPoints;
     play.completedAt = completedAt;
   }
-  async completedDates(deviceId: string) {
-    return [...this.plays.values()].filter((p) => p.deviceId === deviceId && p.completedAt).map((p) => p.date);
+  async completedDates(owner: Owner) {
+    return [...this.plays.values()].filter((p) => this.owns(p, owner) && p.completedAt).map((p) => p.date);
   }
   async rateLimit(key: string, _window: number, max: number) {
     const n = (this.hits.get(key) ?? 0) + 1;
@@ -293,5 +322,61 @@ describe("device streak", () => {
     expect(streakFrom(["2026-12-05", "2026-12-04", "2026-12-02"], "2026-12-05")).toBe(2);
     // Across a DST change (2027-03-14).
     expect(streakFrom(["2027-03-15", "2027-03-14", "2027-03-13"], "2027-03-15")).toBe(3);
+  });
+});
+
+describe("signed-in players", () => {
+  const USER = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+
+  async function playRightAs(i: number, player: { deviceId: string; userId: string | null }) {
+    const round = store.puzzles.get(TODAY)!.rounds[i];
+    const place = placeById(round.place_id);
+    return submitGuess(
+      store,
+      player,
+      round.mode === "pin"
+        ? { puzzleDate: TODAY, roundIndex: i, lat: place.site.lat, lng: place.site.lng }
+        : { puzzleDate: TODAY, roundIndex: i, choiceId: place.id },
+      NOW,
+    );
+  }
+
+  it("a guest's rounds carry over when they sign in mid-game", async () => {
+    await playRight(0);
+    await playRight(1);
+    const today = await getToday(store, { deviceId: DEVICE, userId: USER }, NOW);
+    expect(today.status === "ok" && today.results).toHaveLength(2);
+    expect(today.signedIn).toBe(true);
+
+    const res = await playRightAs(2, { deviceId: DEVICE, userId: USER });
+    expect(res.status).toBe("ok");
+    expect([...store.plays.values()]).toHaveLength(1);
+  });
+
+  it("the account's play wins over a device's guest play on the same day", async () => {
+    // The account already played round 0 on another device.
+    await playRightAs(0, { deviceId: OTHER_DEVICE, userId: USER });
+    // This device played rounds 0 to 2 as a guest.
+    for (let i = 0; i < 3; i++) await playRight(i);
+
+    const today = await getToday(store, { deviceId: DEVICE, userId: USER }, NOW);
+    expect(today.status === "ok" && today.results).toHaveLength(1);
+    // The next round goes on the account's play, even though this device has a play today.
+    expect(await playRightAs(1, { deviceId: DEVICE, userId: USER })).toMatchObject({ status: "ok", totalPoints: 400 });
+  });
+
+  it("finishing refreshes the account's streak and returns the rank", async () => {
+    let last;
+    for (let i = 0; i < 5; i++) last = await playRightAs(i, { deviceId: DEVICE, userId: USER });
+    expect(last).toMatchObject({ status: "ok", completed: true, streak: 1, rank: 1 });
+    expect(store.refreshed).toEqual([USER]);
+    const today = await getToday(store, { deviceId: DEVICE, userId: USER }, NOW);
+    expect(today.status === "ok" && today.rank).toBe(1);
+  });
+
+  it("guests get no rank", async () => {
+    let last;
+    for (let i = 0; i < 5; i++) last = await playRight(i);
+    expect(last).toMatchObject({ completed: true, rank: null });
   });
 });
