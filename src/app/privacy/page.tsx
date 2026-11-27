@@ -1,9 +1,10 @@
+import { MapAttribution } from "@/components/ui/MapAttribution";
 import type { Metadata } from "next";
 import { Page } from "@/components/ui/Page";
 
 export const metadata: Metadata = { title: "Privacy · Where It Used To Be" };
 
-// Placeholder copy for Mike to replace (Milestone 5 polishes this page). It
+// Placeholder copy for Mike to replace. It
 // describes what the app actually stores today; keep it accurate if that changes.
 export default function PrivacyPage() {
   return (
@@ -54,9 +55,7 @@ export default function PrivacyPage() {
         <h2 className="pt-2 text-[18px] font-bold text-ink">No ads</h2>
         <p>There are no ads, and we don&apos;t sell or share your information.</p>
       </div>
-      <p className="mt-8 text-[12px] text-secondary">
-        Map data © OpenStreetMap contributors, served by OpenFreeMap with OpenMapTiles.
-      </p>
+      <MapAttribution />
     </Page>
   );
 }

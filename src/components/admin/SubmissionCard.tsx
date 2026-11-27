@@ -5,7 +5,12 @@ import { approveSubmissionAction, duplicateSubmissionAction, rejectSubmissionAct
 import type { NearbySite } from "@/lib/admin/data";
 import type { SubmissionDetail } from "@/lib/submissions/data";
 import { categoryLabel } from "@/components/game/labels";
-import { PinMap } from "@/components/map/PinMap";
+import dynamic from "next/dynamic";
+// The map (MapLibre, about 1 MB) loads only when this screen shows it, not when a link to the page is prefetched.
+const PinMap = dynamic(() => import("@/components/map/PinMap").then((m) => m.PinMap), {
+  ssr: false,
+  loading: () => <div className="h-full w-full bg-map-land" aria-hidden="true" />,
+});
 import { adminButton, adminButtonDanger, adminButtonSecondary, adminInput, adminLabel, adminTextarea } from "./ui";
 
 export function SubmissionCard(props: {

@@ -6,7 +6,7 @@ import { game, maxPointsPerDay } from "@config/game";
 import { EraCard } from "@/components/era-card/EraCard";
 import { shareText } from "@/lib/game/scoring";
 import type { RoundResult } from "@/lib/game/types";
-import { AdSlot, Countdown, PrimaryButton, verdictColour, verdictLabel } from "./bits";
+import { AdSlot, Countdown, PrimaryButton, SecondaryButton, verdictColour, verdictLabel } from "./bits";
 
 export interface ResultsProps {
   number: number;
@@ -20,6 +20,40 @@ export interface ResultsProps {
 
 export function Results({ number, results, totalPoints, streak, signedIn, rank }: ResultsProps) {
   const [shared, setShared] = useState<"idle" | "copied" | "failed">("idle");
+  const [saving, setSaving] = useState<"idle" | "busy" | "saved" | "failed">("idle");
+
+  /** The results card as a PNG: the share sheet on phones (Save Image), a download elsewhere. */
+  async function saveImage() {
+    setSaving("busy");
+    const fileName = `where-it-used-to-be-${number}.png`;
+    try {
+      const res = await fetch(`/share-image?n=${number}&p=${results.map((r) => r.points).join(",")}`);
+      if (!res.ok) throw new Error(String(res.status));
+      const file = new File([await res.blob()], fileName, { type: "image/png" });
+      if (navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file] });
+          setSaving("idle");
+          return;
+        } catch (e) {
+          if (e instanceof DOMException && e.name === "AbortError") {
+            setSaving("idle");
+            return;
+          }
+          // Fall through to a download.
+        }
+      }
+      const url = URL.createObjectURL(file);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      setSaving("saved");
+    } catch {
+      setSaving("failed");
+    }
+  }
 
   async function share() {
     const text = shareText(
@@ -106,8 +140,19 @@ export function Results({ number, results, totalPoints, streak, signedIn, rank }
         <PrimaryButton className="mt-5" onClick={share}>
           Share
         </PrimaryButton>
+        <SecondaryButton className="mt-2" onClick={saveImage} disabled={saving === "busy"}>
+          {saving === "busy" ? "Making the image…" : "Save image"}
+        </SecondaryButton>
         <p className="mt-2 min-h-5 text-center text-[13px] text-secondary" aria-live="polite">
-          {shared === "copied" ? "Copied. Paste it anywhere." : shared === "failed" ? "Couldn't copy. Try again." : ""}
+          {shared === "copied"
+            ? "Copied. Paste it anywhere."
+            : shared === "failed"
+              ? "Couldn't copy. Try again."
+              : saving === "saved"
+                ? "Image saved to your downloads."
+                : saving === "failed"
+                  ? "Couldn't make the image. Try again."
+                  : ""}
         </p>
       </section>
 

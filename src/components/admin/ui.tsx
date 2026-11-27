@@ -45,7 +45,7 @@ export function Stat({ label, value, href, tone = "plain" }: {
 const pillTone = {
   live: "bg-[#DDEFE3] text-[#1F5E36]",
   draft: "bg-chip text-chip-ink",
-  retired: "bg-divider-soft text-secondary",
+  retired: "bg-divider-soft text-body",
   pending: "bg-chip text-chip-ink",
   approved: "bg-[#DDEFE3] text-[#1F5E36]",
   rejected: "bg-divider-soft text-secondary",

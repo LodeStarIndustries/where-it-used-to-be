@@ -103,6 +103,18 @@ export default function Home() {
       <Suspense fallback={null}>
         <SetupCheck />
       </Suspense>
+
+      <footer className="mt-8 flex justify-center gap-5 text-[13px] text-secondary">
+        <Link href="/how-to-play" className="underline-offset-2 hover:underline">
+          How to play
+        </Link>
+        <Link href="/about" className="underline-offset-2 hover:underline">
+          About
+        </Link>
+        <Link href="/privacy" className="underline-offset-2 hover:underline">
+          Privacy
+        </Link>
+      </footer>
     </main>
   );
 }

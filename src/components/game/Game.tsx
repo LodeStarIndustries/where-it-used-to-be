@@ -7,7 +7,12 @@ import { fetchToday, sendGuess } from "@/lib/game/client";
 import type { LatLng } from "@/lib/game/geo";
 import type { NameRound, PinRound, RoundResult, TodayResponse } from "@/lib/game/types";
 import { categoryLabel, PrimaryButton, SecondaryButton, Tag } from "./bits";
-import { GameMap } from "./GameMap";
+import dynamic from "next/dynamic";
+// The map (MapLibre, about 1 MB) loads only when this screen shows it, not when a link to the page is prefetched.
+const GameMap = dynamic(() => import("./GameMap").then((m) => m.GameMap), {
+  ssr: false,
+  loading: () => <div className="h-full w-full bg-map-land" aria-hidden="true" />,
+});
 import { Results } from "./Results";
 import { RevealSheet } from "./RevealSheet";
 
