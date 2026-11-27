@@ -91,6 +91,7 @@ export default function Home() {
           <NavLink href="/leaderboard">Leaderboard</NavLink>
           <NavLink href="/groups">Groups</NavLink>
           <NavLink href="/suggest">Suggest a place</NavLink>
+          <NavLink href="/about">About</NavLink>
           <Suspense fallback={<li className={`${linkClass} text-secondary`}>Sign in</li>}>
             <AccountLink />
           </Suspense>
