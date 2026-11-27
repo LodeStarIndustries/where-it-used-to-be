@@ -1,19 +1,10 @@
 "use client";
 // Small shared pieces for the game screens.
 import { useEffect, useRef, useSyncExternalStore } from "react";
-import { game, type Category, type VerdictKey } from "@config/game";
+import { game, type VerdictKey } from "@config/game";
 import { nextPuzzleAt, puzzleDateFor } from "@/lib/puzzle-date";
 
-export const categoryLabel: Record<Category, string> = {
-  restaurant: "Restaurant",
-  bar: "Bar",
-  retail: "Retail",
-  grocery: "Grocery",
-  entertainment: "Entertainment",
-  service: "Service",
-  automotive: "Automotive",
-  other: "Other",
-};
+export { categoryLabel } from "./labels";
 
 export const verdictLabel = (key: VerdictKey) => game.verdicts.find((v) => v.key === key)!.label;
 

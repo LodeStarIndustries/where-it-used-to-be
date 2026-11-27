@@ -90,3 +90,30 @@ describe("puzzle generator", () => {
     expect(daysOfUnusedPlaces(makePool(23))).toBe(4);
   });
 });
+
+describe("re-rolling a name round's wrong answers", () => {
+  it("follows the same rules and changes with the seed", async () => {
+    const { wrongAnswersFor } = await import("./generator");
+    const pool = Array.from({ length: 30 }, (_, i) => ({
+      id: `p${i}`,
+      siteId: `s${i % 25}`,
+      category: (["restaurant", "bar", "retail"] as const)[i % 3],
+      era: null,
+      difficulty: 1,
+      lastUsedOn: null,
+    }));
+    const day = ["p0", "p1", "p2", "p3", "p4"];
+    const a = wrongAnswersFor(pool, "p0", day, "one");
+    const b = wrongAnswersFor(pool, "p0", day, "two");
+    for (const set of [a, b]) {
+      expect(set).toHaveLength(3);
+      expect(set.some((id) => day.includes(id))).toBe(false);
+      const sites = set.map((id) => pool.find((p) => p.id === id)!.siteId);
+      expect(new Set([...sites, "s0"]).size).toBe(4);
+    }
+    expect(a).not.toEqual(b);
+    // Asking to avoid the current answers gives three different ones.
+    const c = wrongAnswersFor(pool, "p0", day, "one", a);
+    expect(c.some((id) => a.includes(id))).toBe(false);
+  });
+});

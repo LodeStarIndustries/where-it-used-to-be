@@ -1,0 +1,4 @@
+name,category,address_text,lat,lng,current_use,neighbourhood,year_opened,year_closed,era,fact,difficulty,source_1_label,source_1_url,source_2_label,source_2_url,source_3_label,source_3_url,notes
+TEST: Harbourside Diner,restaurant,TEST: 12 Example Wharf,45.2702,-66.0651,TEST: Coffee shop,Uptown,1976,1999,1980s,"TEST: A made-up diner for checking the import, with ""quotes"" and a comma.",1,TEST source,https://example.com/diner,,,,,Sample row with a pin.
+TEST: Corner Video,retail,"TEST: 40 Example St, at Example Ave",,,TEST: Pharmacy,North End,1987,2006,1990s,TEST: A made-up video store with no pin yet.,2,TEST source,https://example.com/video,TEST second source,https://example.com/video-2,,,Needs a pin after import.
+TEST: Drive-In Lanes,entertainment,TEST: Example Rd,,,,East,1965,,,TEST: A made-up bowling alley with no era (fallback card).,3,,,,,,,

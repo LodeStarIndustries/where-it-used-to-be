@@ -1,13 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { startTransition, useActionState } from "react";
 import { saveWelcome, type FormState } from "@/lib/auth/actions";
 import { FormMessage, inputClass, primaryButtonClass } from "@/components/ui/Page";
 
-function Submit() {
-  const { pending } = useFormStatus();
+function Submit({ pending }: { pending: boolean }) {
   return (
     <button type="submit" disabled={pending} className={`${primaryButtonClass} mt-6`}>
       {pending ? "Saving…" : "Continue"}
@@ -16,9 +14,18 @@ function Submit() {
 }
 
 export function WelcomeForm({ next }: { next: string }) {
-  const [state, action] = useActionState<FormState, FormData>(saveWelcome, { status: "idle" });
+  const [state, action, pending] = useActionState<FormState, FormData>(saveWelcome, { status: "idle" });
   return (
-    <form action={action} className="mt-6" noValidate>
+    <form
+      // onSubmit (not the action prop) keeps the typed name if it's taken.
+      onSubmit={(e) => {
+        e.preventDefault();
+        const fd = new FormData(e.currentTarget);
+        startTransition(() => action(fd));
+      }}
+      className="mt-6"
+      noValidate
+    >
       <input type="hidden" name="next" value={next} />
       <label htmlFor="displayName" className="block text-[14px] font-semibold text-ink">
         Display name
@@ -60,7 +67,7 @@ export function WelcomeForm({ next }: { next: string }) {
         </div>
       </div>
 
-      <Submit />
+      <Submit pending={pending} />
     </form>
   );
 }

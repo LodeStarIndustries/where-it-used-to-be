@@ -121,9 +121,15 @@ export async function history(userId: string, limit = 60): Promise<PastResult[]>
 
 /**
  * Removes the account. The database cascades this to the profile, plays and
- * rounds, group memberships and any groups the player owns.
+ * rounds, suggestions, group memberships and any groups the player owns.
  */
 export async function deleteAccount(userId: string) {
+  // Their suggestions go with the account (the database cascades), so remove those photos from storage first.
+  const photos = check(
+    await db().from("submissions").select("photo_path").eq("user_id", userId).not("photo_path", "is", null),
+    "Reading suggestion photos",
+  ) as { photo_path: string }[];
+  if (photos.length) await db().storage.from("photos").remove(photos.map((p) => p.photo_path));
   const { error } = await db().auth.admin.deleteUser(userId);
   if (error) throw new Error(`Deleting the account: ${error.message}`);
 }

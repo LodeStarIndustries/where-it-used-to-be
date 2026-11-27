@@ -127,3 +127,35 @@ export function generateDays(
 export function daysOfUnusedPlaces(pool: readonly PoolPlace[]): number {
   return Math.floor(pool.filter((p) => p.lastUsedOn === null).length / game.roundsPerDay);
 }
+
+/**
+ * Fresh wrong answers for one name round (the admin's "re-roll"). Same rules as
+ * the generator: other sites only, never another of the day's answers, same
+ * category and era preferred, four choices on four different sites.
+ */
+export function wrongAnswersFor(
+  pool: readonly PoolPlace[],
+  answerId: string,
+  dayPlaceIds: readonly string[],
+  seed: string,
+  /** The current wrong answers: left out when there are enough others, so a re-roll changes something. */
+  avoid: readonly string[] = [],
+): string[] {
+  const answer = pool.find((p) => p.id === answerId);
+  if (!answer) throw new NotEnoughPlacesError("That place isn't live.");
+  const day = new Set(dayPlaceIds);
+  if (avoid.length) {
+    const skip = new Set(avoid);
+    try {
+      return pickWrongAnswers(
+        pool.filter((p) => !skip.has(p.id)),
+        answer,
+        day,
+        seededRandom(seed),
+      );
+    } catch (err) {
+      if (!(err instanceof NotEnoughPlacesError)) throw err;
+    }
+  }
+  return pickWrongAnswers(pool, answer, day, seededRandom(seed));
+}
