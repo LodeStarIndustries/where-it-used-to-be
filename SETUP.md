@@ -230,6 +230,40 @@ where id = (select id from auth.users where email = 'YOUR-EMAIL');
 
 Admin rights are checked on the server for every admin route, and players can't change `is_admin` themselves (the database refuses).
 
+## 13. The admin area (Milestone 4)
+
+Once your account is an admin (step 12), the home page shows an **Admin** link, or go to `/admin`. Everyone else gets a "page not found" there, and every admin action checks your rights on the server.
+
+**Getting the starter list in**
+
+1. In the Google Sheet: **File → Download → Comma-separated values (.csv)**.
+2. **Admin → Import & export**: choose the file and press **Check the file**. Nothing is saved yet. You see every row with its errors (skipped) and warnings ("needs a pin", "a place with this name already exists"). The sheet's extra columns (`verified_by_mike`, `import_check`, `checked_from`) are ignored. If a row's coordinates are within 30 m of an existing site, you can choose to share that site.
+3. Press **Import**. Every row becomes a **draft**.
+
+**From draft to live** (Admin → Places, filter **Needs a pin**)
+
+1. Open a draft. The map shows every label (shops, landmarks) to help you find the spot; players never see this map. Click where it was, drag to adjust, and **Save changes**. If the pin lands within 30 m of another site, you're offered **Use that site**: places on one site never share a day or appear as each other's wrong answers.
+2. Fill in what's missing (difficulty is required to go live), check the era card preview, then **Mark verified** and **Make live**. The button tells you what's still missing.
+3. A live place used in today's or a future puzzle can't be retired until you swap it out of that day.
+
+**Puzzles** (Admin → Puzzles)
+
+- **Generate** fills every missing day from today to 30 days out, least recently used places first, and never touches a day that already has a puzzle. You need at least five live places on different sites, plus enough others for name rounds' wrong answers; about 150 live places last 30 days without repeats.
+- Open any future day to swap a place, switch a round between Pin it and Name it, or **Re-roll** a name round's wrong answers. The database re-checks every rule when you save. Days that have started can't change.
+- **Preview as player** shows each round exactly as players get it, then the reveal.
+
+**Suggestions** (Admin → Submissions)
+
+- Signed-in players send suggestions from **Suggest a place** (5 a day). Oldest first. **Approve** creates a draft from it (name, category, pin, address, what's there now, decade and photo; the years and memory go into its notes) and opens it for you to finish. **Duplicate** links it to an existing place; **Reject** takes an optional note. Notes are for admins only; players see "Being checked", "Added" or "Not added" in their profile.
+
+**Photos**
+
+- Players' photos and yours are JPG or PNG up to 5 MB. Phones shrink them before upload; the server then re-encodes every photo, which removes location (GPS) and camera details. They're stored in the private `photos` bucket and shown to admins through links that expire after 30 minutes. Players don't see photos in the game yet.
+
+**Export**: Import & export → **Download places.csv** writes every place in the import's columns.
+
+A sample file with three `TEST:` rows is in `samples/places-sample.csv` (dev database only: production refuses `TEST:` names).
+
 ## Environment variables
 
 | Variable | Where | Secret? | What it is |
@@ -271,7 +305,7 @@ Guesses, sign-in emails, group actions and submissions are counted in Postgres b
 | Sign-in emails | 5 an hour, and 3 an hour to any one address | IP address, and email address |
 | Creating groups | 10 a day | player |
 | Joining groups | 20 an hour | player |
-| Submissions (Milestone 4) | 5 a day | player |
+| Suggestions (Suggest a place) | 5 a day | player |
 
 Sign-in emails are also capped by Supabase Auth's own limits (**Authentication → Rate Limits**).
 

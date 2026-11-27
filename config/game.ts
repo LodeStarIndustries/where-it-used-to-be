@@ -68,6 +68,8 @@ export interface GameConfig {
     /** Radius of the circle drawn around the real site on reveal. */
     revealCircleMeters: number;
     styleUrl: string;
+    /** Admin-only map with every label (shops, landmarks), for finding where to drop a pin. */
+    adminStyleUrl: string;
   };
   limits: {
     displayName: { min: number; max: number };
@@ -132,6 +134,7 @@ export const game = {
     ],
     revealCircleMeters: 50,
     styleUrl: "https://tiles.openfreemap.org/styles/positron",
+    adminStyleUrl: "https://tiles.openfreemap.org/styles/liberty",
   },
   limits: {
     displayName: { min: 2, max: 24 },
@@ -159,3 +162,18 @@ export const game = {
 } as const satisfies GameConfig;
 
 export const maxPointsPerDay = game.roundsPerDay * game.maxPointsPerRound;
+
+/** Every place category, in the order forms list them. Matches the place_category enum. */
+export const categories: readonly Category[] = [
+  "restaurant",
+  "bar",
+  "retail",
+  "grocery",
+  "entertainment",
+  "service",
+  "automotive",
+  "other",
+];
+
+/** Every era with its own card style. Blank means the fallback card. Matches the era enum. */
+export const eras: readonly Era[] = ["1970s", "1980s", "1990s", "2000s", "2010s"];

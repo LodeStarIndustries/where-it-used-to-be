@@ -5,6 +5,7 @@ import { HomeStatus } from "@/components/home/HomeStatus";
 import { pillClass } from "@/components/ui/Page";
 import { getProfile } from "@/lib/account/data";
 import { currentUserId } from "@/lib/auth/session";
+import { viewerIsAdmin } from "@/lib/admin/guard";
 import { checkHealth } from "@/lib/health";
 
 /** Outside production only: which database this deployment uses. */
@@ -26,7 +27,6 @@ async function SetupCheck() {
   );
 }
 
-const soon = ["Suggest a place"];
 
 const linkClass = "flex items-center justify-between px-4 py-3.5 text-[15px] font-semibold text-ink";
 
@@ -52,6 +52,11 @@ async function AccountPill() {
       Sign in
     </Link>
   );
+}
+
+/** Admins only: a way into the admin area. */
+async function AdminLink() {
+  return (await viewerIsAdmin()) ? <NavLink href="/admin">Admin</NavLink> : null;
 }
 
 /** Sign in, or the player's profile once signed in. */
@@ -85,14 +90,12 @@ export default function Home() {
         <ul className="divide-y divide-divider-soft rounded-card bg-surface shadow-card">
           <NavLink href="/leaderboard">Leaderboard</NavLink>
           <NavLink href="/groups">Groups</NavLink>
-          {soon.map((label) => (
-            <li key={label} className="flex items-center justify-between px-4 py-3.5 text-[15px] text-secondary">
-              {label}
-              <span className="label-caps">Soon</span>
-            </li>
-          ))}
+          <NavLink href="/suggest">Suggest a place</NavLink>
           <Suspense fallback={<li className={`${linkClass} text-secondary`}>Sign in</li>}>
             <AccountLink />
+          </Suspense>
+          <Suspense fallback={null}>
+            <AdminLink />
           </Suspense>
         </ul>
       </nav>

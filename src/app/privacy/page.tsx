@@ -27,6 +27,13 @@ export default function PrivacyPage() {
           Your display name and scores appear on leaderboards. Members of your groups see your scores and, once
           they&apos;ve played that day, your round results.
         </p>
+        <h2 className="pt-2 text-[18px] font-bold text-ink">If you suggest a place</h2>
+        <p>
+          We keep what you send (the business, its pin, your memory and any photo) and that it came from you. Only the
+          game&apos;s admins see suggestions. Photos are stored privately, and we remove their location and camera details
+          when you upload them. Please don&apos;t send homes, private people, or photos you don&apos;t have permission to
+          share.
+        </p>
         <h2 className="pt-2 text-[18px] font-bold text-ink">Emails</h2>
         <p>
           We email you a sign-in link when you ask for one. We only send other emails, about the game and new features,
@@ -35,8 +42,8 @@ export default function PrivacyPage() {
         </p>
         <h2 className="pt-2 text-[18px] font-bold text-ink">Deleting your account</h2>
         <p>
-          Delete your account from your profile. It removes your profile, your signed-in results, your group
-          memberships and any groups you own.
+          Delete your account from your profile. It removes your profile, your signed-in results, your suggestions,
+          your group memberships and any groups you own.
         </p>
         <h2 className="pt-2 text-[18px] font-bold text-ink">Visit counts</h2>
         <p>
