@@ -34,6 +34,9 @@ export type PlannedRow =
 export const nameKey = (name: string) => name.trim().toLowerCase();
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+// The database stores sources as jsonb, which reorders each object's keys
+// (url before label), so compare the values, not the raw JSON.
+const sourcesKey = (list: PlaceInput["sources"]) => JSON.stringify(list.map((x) => [x.label, x.url]));
 const near = (a: number | null, b: number | null) => (a === null || b === null ? a === b : Math.abs(a - b) < 1e-7);
 
 /** The sheet row laid over the existing place: sheet values win, blanks keep the existing value. */
@@ -78,7 +81,7 @@ export function changedFields(before: PlaceInput, after: PlaceInput): { fields: 
   if (!same(before.era, after.era)) fields.push("era");
   if (!same(before.fact, after.fact)) fields.push("fact");
   if (!same(before.difficulty, after.difficulty)) fields.push("difficulty");
-  if (!same(before.sources, after.sources)) fields.push("sources");
+  if (sourcesKey(before.sources) !== sourcesKey(after.sources)) fields.push("sources");
   site("notes", !same(before.notes, after.notes));
   return { fields, siteChanged };
 }
