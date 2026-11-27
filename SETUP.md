@@ -152,13 +152,13 @@ git push -u origin main
 ### Google OAuth client
 
 1. In [Google Cloud Console](https://console.cloud.google.com/), create a project named `Where It Used To Be`.
-2. **Google Auth Platform → Branding**: app name `Where It Used To Be`, your support email. Under **Authorized domains**, add `supabase.co`.
+2. **Google Auth Platform → Branding**: app name `Where It Used To Be`, your support email. Under **Authorized domains**, add each Supabase project's own domain, `igclemmromezcgmxucov.supabase.co` and `hutisipoyetsaclasqvb.supabase.co`. Plain `supabase.co` is refused, because Google treats it like `.com` (every project gets its own subdomain).
 3. **Audience**: External. Publish the app when you're ready for anyone to sign in (until then only listed test users can).
 4. **Clients → Create client**: type **Web application**.
-   - Authorized JavaScript origins: `http://localhost:3000` and `https://<project-name>.vercel.app`.
+   - Authorized JavaScript origins: `http://localhost:3000` and `https://where-it-used-to-be.vercel.app`.
    - Authorized redirect URIs: both Supabase callbacks:
-     - `https://<dev-ref>.supabase.co/auth/v1/callback`
-     - `https://<prod-ref>.supabase.co/auth/v1/callback`
+     - `https://igclemmromezcgmxucov.supabase.co/auth/v1/callback`
+     - `https://hutisipoyetsaclasqvb.supabase.co/auth/v1/callback`
 5. Copy the **Client ID** and **Client secret**.
 6. In **each** Supabase project: **Authentication → Sign In / Providers → Google**, turn it on and paste the client ID and secret.
 
@@ -168,14 +168,20 @@ In each project, **Authentication → URL Configuration**:
 
 | Setting | Dev project | Prod project |
 | --- | --- | --- |
-| Site URL | `http://localhost:3000` | `https://<project-name>.vercel.app` |
-| Redirect URLs | `http://localhost:3000/**` and `https://*-<your-vercel-team-slug>.vercel.app/**` | `https://<project-name>.vercel.app/**` |
+| Site URL | `http://localhost:3000` | `https://where-it-used-to-be.vercel.app` |
+| Redirect URLs | `http://localhost:3000/**` and `https://*-mike-davidsons-projects-6de86e83.vercel.app/**` | `https://where-it-used-to-be.vercel.app/**` |
 
 The wildcard line covers every Vercel preview URL. Your team slug is in your Vercel dashboard URL.
 
-### Magic link email
+### Sign-in emails
 
-In each project, **Authentication → Emails → Templates → Magic Link**:
+The link in the email must go straight to the app's `/auth/confirm` page with a one-time token, not through Supabase's default link. That way it works even when the player opens the email in a different browser (for example, a phone's mail app), and on every preview URL. The app puts `/auth/confirm?next=…` in `{{ .RedirectTo }}`, so the template adds the token after it with `&`.
+
+Supabase only allows template changes once custom SMTP is on (free plan), so **set up Gmail sending below first**. Until then, the default email still signs players in, but only if they open the link in the same browser they asked from.
+
+In each project, **Authentication → Emails → Templates**, change two templates.
+
+**Magic Link** (players who already have an account):
 
 - Subject: `Your sign-in link for Where It Used To Be`
 - Body (placeholder copy, Canadian English):
@@ -183,9 +189,16 @@ In each project, **Authentication → Emails → Templates → Magic Link**:
 ```html
 <h2>Sign in to Where It Used To Be</h2>
 <p>Tap the link below to sign in. It works once and expires in an hour.</p>
-<p><a href="{{ .ConfirmationURL }}">Sign in</a></p>
+<p><a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email">Sign in</a></p>
 <p>If you didn't ask for this, you can ignore this email.</p>
 ```
+
+**Confirm signup** (a player's first sign-in, which creates the account):
+
+- Subject: `Your sign-in link for Where It Used To Be`
+- Body: the same as above.
+
+If the redirect URLs above don't include the address the player signed in from, Supabase falls back to the Site URL and the link won't work; the player sees "That sign-in link didn't work". Check the redirect URLs first if that happens.
 
 Supabase's built-in email sender only allows a few emails an hour and is meant for testing. Before you invite testers, send through the game's own Gmail account (`whereitusedtobegame@gmail.com`) instead:
 
@@ -242,7 +255,31 @@ Vercel sets `VERCEL_ENV` itself; the app uses it to tell production from preview
 | `npm run db:push:prod` | Apply new migrations to production (asks first) |
 | `npm run db:fixtures` | (Re)load `TEST:` fixtures into dev |
 | `npm run db:advisors` | Supabase's own security and performance checks, on dev |
+| `npm run puzzles:generate` | Make daily puzzles in **dev** from today for 30 days (`-- 7` for a week), skipping days that have one. Refuses to run against production |
+
+## Checking the era cards
+
+Outside production, <http://localhost:3000/dev/era-cards> (and the same path on a preview URL) shows all six era card styles, full and mini, with a short and a very long name. In production that page doesn't exist.
 
 ## How rate limiting works
 
-Guesses and submissions are counted in Postgres by `public.rate_limit_hit(key, window_seconds, max)`, which only the server can call. Limits live in `config/game.ts` under `rateLimits`. Sign-in emails are also capped by Supabase Auth's own limits (**Authentication → Rate Limits**). The routes that use these arrive in Milestones 2 to 4.
+Guesses, sign-in emails, group actions and submissions are counted in Postgres by `public.rate_limit_hit(key, window_seconds, max)`, which only the server can call. Limits live in `config/game.ts` under `rateLimits`:
+
+| What | Limit (default) | Counted by |
+| --- | --- | --- |
+| Guesses | 30 a minute | device |
+| Sign-in emails | 5 an hour, and 3 an hour to any one address | IP address, and email address |
+| Creating groups | 10 a day | player |
+| Joining groups | 20 an hour | player |
+| Submissions (Milestone 4) | 5 a day | player |
+
+Sign-in emails are also capped by Supabase Auth's own limits (**Authentication → Rate Limits**).
+
+## How accounts work
+
+- Playing never needs an account. A guest's browser keeps a random device ID (local storage, plus a `wiutb_device` cookie so the server can see it at sign-in).
+- On sign-in, `/auth/confirm` links the device to the account and moves its guest plays across. If the account already has a play for a day the device also played, the account's play is kept.
+- Signing out gives the browser a new device ID, so whoever uses it next starts as a fresh guest.
+- First sign-in asks for a display name (2 to 24 characters, unique ignoring case and spaces) and has an **unticked** box to get emails about the game. The choice and its time are stored in `profiles.marketing_opt_in` and `marketing_opt_in_at`, and players can change it in Profile. Nothing syncs to a mailing tool; export from the `profiles` table when you need a list.
+- Delete account (in Profile) deletes the auth user; the database removes the profile, plays, group memberships and groups the player owns.
+- To try sign-in locally without sending email, sign in once on <http://localhost:3000/sign-in> with your own address.

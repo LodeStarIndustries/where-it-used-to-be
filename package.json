@@ -14,12 +14,19 @@
     "db:push:prod": "node scripts/db.mjs push:prod",
     "db:fixtures": "node scripts/db.mjs fixtures",
     "db:advisors": "node scripts/db.mjs advisors",
-    "env:cli-secrets": "node scripts/set-cli-secrets.mjs"
+    "env:cli-secrets": "node scripts/set-cli-secrets.mjs",
+    "puzzles:generate": "tsx --tsconfig tsconfig.json scripts/generate-puzzles.mts",
+    "predev": "node scripts/copy-maplibre-worker.mjs",
+    "prebuild": "node scripts/copy-maplibre-worker.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.2",
+    "@vercel/analytics": "2.0.1",
+    "@vercel/speed-insights": "2.1.0",
+    "maplibre-gl": "6.17.0",
     "next": "16.4.6",
+    "obscenity": "0.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "^0.0.1",

@@ -1,81 +1,105 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { HomeStatus } from "@/components/home/HomeStatus";
+import { pillClass } from "@/components/ui/Page";
+import { getProfile } from "@/lib/account/data";
+import { currentUserId } from "@/lib/auth/session";
 import { checkHealth } from "@/lib/health";
 
-// Milestone 1 placeholder. The real Home screen arrives in Milestone 2.
-
-function formatDate(isoDate: string) {
-  return new Intl.DateTimeFormat("en-CA", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(`${isoDate}T12:00:00Z`));
-}
-
-async function Status() {
+/** Outside production only: which database this deployment uses. */
+async function SetupCheck() {
   await connection();
   const health = await checkHealth();
-  const showDetails = health.deploy !== "production";
-
+  if (health.deploy === "production") return null;
   return (
-    <>
-      <p className="label-caps text-secondary">
-        {health.puzzleNumber >= 1 ? `Day #${health.puzzleNumber}` : `Launches in ${1 - health.puzzleNumber} days`}
+    <section aria-labelledby="status-heading" className="mt-8 rounded-card border border-divider p-4">
+      <h2 id="status-heading" className="label-caps text-secondary">
+        Setup check ({health.deploy})
+      </h2>
+      <p className="mt-2 text-[13px] text-body">
+        Database: {health.database}
+        {health.databaseEnvironment ? ` (${health.databaseEnvironment})` : ""}.{" "}
+        {health.problems.length > 0 ? <span className="text-accent">{health.problems.join(" ")}</span> : "All good."}
       </p>
-      <p className="mt-1 text-[15px] text-body">{formatDate(health.puzzleDate)}</p>
+    </section>
+  );
+}
 
-      {showDetails && (
-        <section aria-labelledby="status-heading" className="mt-6 rounded-card bg-surface p-4 shadow-card">
-          <h2 id="status-heading" className="label-caps text-secondary">
-            Setup check
-          </h2>
-          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[14px]">
-            <dt className="text-secondary">Deployment</dt>
-            <dd className="font-medium text-ink">{health.deploy}</dd>
-            <dt className="text-secondary">Database</dt>
-            <dd className="font-medium text-ink">
-              {health.database}
-              {health.databaseEnvironment ? ` (${health.databaseEnvironment})` : ""}
-            </dd>
-          </dl>
-          {health.problems.length > 0 ? (
-            <ul className="mt-3 space-y-1 border-t border-divider-soft pt-3 text-[14px] text-accent">
-              {health.problems.map((p) => (
-                <li key={p}>{p}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-3 border-t border-divider-soft pt-3 text-[14px] text-ink">All good.</p>
-          )}
-        </section>
-      )}
-    </>
+const soon = ["Suggest a place"];
+
+const linkClass = "flex items-center justify-between px-4 py-3.5 text-[15px] font-semibold text-ink";
+
+function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <li>
+      <Link href={href} className={linkClass}>
+        {children} <span aria-hidden="true">›</span>
+      </Link>
+    </li>
+  );
+}
+
+/** Next to How to play in the illustration: Sign in, or Profile once signed in. */
+async function AccountPill() {
+  const userId = await currentUserId();
+  return userId ? (
+    <Link href="/profile" className={pillClass}>
+      Profile
+    </Link>
+  ) : (
+    <Link href="/sign-in" className={pillClass}>
+      Sign in
+    </Link>
+  );
+}
+
+/** Sign in, or the player's profile once signed in. */
+async function AccountLink() {
+  const userId = await currentUserId();
+  const profile = userId ? await getProfile(userId) : null;
+  if (!profile) return <NavLink href="/sign-in">Sign in</NavLink>;
+  return (
+    <NavLink href="/profile">
+      <span>
+        Profile <span className="font-normal text-secondary">· {profile.displayName ?? "Pick a name"}</span>
+      </span>
+    </NavLink>
   );
 }
 
 export default function Home() {
   return (
-    <main className="mx-auto flex w-full max-w-[430px] flex-1 flex-col px-4 py-10">
-      <h1 className="text-[32px] font-bold leading-tight text-ink">Where It Used To Be</h1>
-      <p className="mt-2 text-[15px] text-body">
-        A daily map game about the Saint John businesses that are gone. Coming soon.
-      </p>
+    <main className="mx-auto flex w-full max-w-[430px] flex-1 flex-col px-4 pb-10 min-[431px]:pt-6">
+      <h1 className="sr-only">Where It Used To Be: a daily map game about the Saint John businesses that are gone</h1>
 
-      <div className="mt-8">
-        <Suspense fallback={<p className="label-caps text-secondary">Loading…</p>}>
-          <Status />
-        </Suspense>
-      </div>
+      <HomeStatus
+        account={
+          <Suspense fallback={<span className={`${pillClass} invisible`} aria-hidden="true">Sign in</span>}>
+            <AccountPill />
+          </Suspense>
+        }
+      />
 
-      <button
-        type="button"
-        disabled
-        className="mt-8 h-button rounded-button bg-ink text-[15px] font-semibold text-white disabled:opacity-60"
-      >
-        Play (coming in Milestone 2)
-      </button>
+      <nav aria-label="More" className="mt-6">
+        <ul className="divide-y divide-divider-soft rounded-card bg-surface shadow-card">
+          <NavLink href="/leaderboard">Leaderboard</NavLink>
+          <NavLink href="/groups">Groups</NavLink>
+          {soon.map((label) => (
+            <li key={label} className="flex items-center justify-between px-4 py-3.5 text-[15px] text-secondary">
+              {label}
+              <span className="label-caps">Soon</span>
+            </li>
+          ))}
+          <Suspense fallback={<li className={`${linkClass} text-secondary`}>Sign in</li>}>
+            <AccountLink />
+          </Suspense>
+        </ul>
+      </nav>
+
+      <Suspense fallback={null}>
+        <SetupCheck />
+      </Suspense>
     </main>
   );
 }

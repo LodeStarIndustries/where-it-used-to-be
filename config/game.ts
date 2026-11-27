@@ -84,7 +84,10 @@ export interface GameConfig {
   rateLimits: {
     guessesPerMinutePerDevice: number;
     signInEmailsPerHourPerIp: number;
+    signInEmailsPerHourPerAddress: number;
     submissionsPerDayPerPlayer: number;
+    groupsCreatedPerDayPerPlayer: number;
+    groupJoinsPerHourPerPlayer: number;
   };
   leaderboard: {
     topN: number;
@@ -143,7 +146,10 @@ export const game = {
   rateLimits: {
     guessesPerMinutePerDevice: 30,
     signInEmailsPerHourPerIp: 5,
+    signInEmailsPerHourPerAddress: 3,
     submissionsPerDayPerPlayer: 5,
+    groupsCreatedPerDayPerPlayer: 10,
+    groupJoinsPerHourPerPlayer: 20,
   },
   leaderboard: {
     topN: 50,
