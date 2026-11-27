@@ -152,7 +152,7 @@ git push -u origin main
 ### Google OAuth client
 
 1. In [Google Cloud Console](https://console.cloud.google.com/), create a project named `Where It Used To Be`.
-2. **Google Auth Platform → Branding**: app name `Where It Used To Be`, your support email. Under **Authorized domains**, add `supabase.co`.
+2. **Google Auth Platform → Branding**: app name `Where It Used To Be`, your support email. Under **Authorized domains**, add each Supabase project's own domain, `igclemmromezcgmxucov.supabase.co` and `hutisipoyetsaclasqvb.supabase.co`. Plain `supabase.co` is refused, because Google treats it like `.com` (every project gets its own subdomain).
 3. **Audience**: External. Publish the app when you're ready for anyone to sign in (until then only listed test users can).
 4. **Clients → Create client**: type **Web application**.
    - Authorized JavaScript origins: `http://localhost:3000` and `https://where-it-used-to-be.vercel.app`.
