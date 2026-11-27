@@ -58,7 +58,7 @@ async function Dashboard() {
               >
                 <p className="text-[13px] font-semibold text-ink">{formatShortDate(d.date)}</p>
                 <p className="text-[12px] text-secondary">Day #{d.number}</p>
-                <p className="mt-1">{d.ready ? <Pill tone="live">Ready</Pill> : <Pill tone="warn">Missing</Pill>}</p>
+                <p className="mt-1">{d.ready ? <Pill tone="live">Scheduled</Pill> : <Pill tone="warn">Missing</Pill>}</p>
               </Link>
             </li>
           ))}

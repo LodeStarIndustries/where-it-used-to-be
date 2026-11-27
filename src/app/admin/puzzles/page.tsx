@@ -34,6 +34,10 @@ async function Calendar() {
           fills every missing day from today to {formatShortDate(to)}, least recently used places first, and never changes
           a day that already has a puzzle.
         </p>
+        <p className="mt-2 text-[14px] text-body">
+          There&apos;s nothing to publish: each scheduled day goes live on its own at midnight, Moncton time. Days that
+          have started can&apos;t be changed.
+        </p>
         <div className="mt-3">
           <GenerateButton missing={missing} />
         </div>
@@ -60,7 +64,7 @@ async function Calendar() {
                   ) : started ? (
                     <Pill tone="retired">Played</Pill>
                   ) : (
-                    <Pill tone="live">Ready</Pill>
+                    <Pill tone="live">Scheduled</Pill>
                   )}
                 </div>
                 {day && (
