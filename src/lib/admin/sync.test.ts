@@ -79,4 +79,12 @@ describe("planImport", () => {
     expect(plan[0].kind).toBe("error");
     expect(plan[1].kind).toBe("error");
   });
+
+  it("treats sources stored with their keys in another order as unchanged", () => {
+    const stored = { url: "https://a.ca", label: "A" } as unknown as { label: string; url: string };
+    const plan = planImport(rows("Kept,bar,,,,,,,,,,,A,https://a.ca,,,,,"), [
+      existing("a", { name: "Kept", sources: [stored] }),
+    ]);
+    expect(plan[0].kind).toBe("same");
+  });
 });
