@@ -7,6 +7,7 @@ import { addDays, puzzleDateFor, puzzleNumberFor } from "@/lib/puzzle-date";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { GeneratedRound } from "@/lib/game/generator";
 import type { PlaceInput, SourceInput } from "./place-schema";
+import type { ExistingPlace } from "./sync";
 
 export function db(): SupabaseClient {
   const client = createAdminClient();
@@ -463,15 +464,6 @@ export async function allowsTestNames(): Promise<boolean> {
   return row?.environment === "development";
 }
 
-/** Names already in the database, matched exactly, for the import's duplicate warning. */
-export async function existingNames(names: string[]): Promise<Set<string>> {
-  if (names.length === 0) return new Set();
-  const rows = check(await db().from("places").select("name").in("name", names), "Checking existing names") as {
-    name: string;
-  }[];
-  return new Set(rows.map((r) => r.name));
-}
-
 /** Creates drafts in bulk: new sites for rows without attachSiteId, then the places. */
 export async function importPlaces(items: { place: PlaceInput; attachSiteId?: string }[], createdBy: string): Promise<number> {
   if (items.length === 0) return 0;
@@ -536,4 +528,63 @@ export async function allPlacesForExport(): Promise<PlaceInput[]> {
     currentUse: r.sites.current_use,
     notes: r.sites.notes,
   }));
+}
+
+/** Every place with its id and site, for matching re-imported sheet rows. */
+export async function placesForSync(): Promise<ExistingPlace[]> {
+  const rows = check(
+    await db()
+      .from("places")
+      .select(
+        "id, site_id, name, category, era, year_opened, year_closed, fact, difficulty, sources, sites!inner(lat, lng, address_text, neighbourhood, current_use, notes, places(id, name))",
+      ),
+    "Reading places",
+  ) as unknown as {
+    id: string;
+    site_id: string;
+    name: string;
+    category: Category;
+    era: Era | null;
+    year_opened: number | null;
+    year_closed: number | null;
+    fact: string | null;
+    difficulty: 1 | 2 | 3 | null;
+    sources: SourceInput[];
+    sites: {
+      lat: number | null;
+      lng: number | null;
+      address_text: string | null;
+      neighbourhood: string | null;
+      current_use: string | null;
+      notes: string | null;
+      places: { id: string; name: string }[];
+    };
+  }[];
+  return rows.map((r) => ({
+    id: r.id,
+    siteId: r.site_id,
+    siteSiblings: r.sites.places.filter((p) => p.id !== r.id).map((p) => p.name),
+    place: {
+      name: r.name,
+      category: r.category,
+      era: r.era,
+      yearOpened: r.year_opened,
+      yearClosed: r.year_closed,
+      fact: r.fact,
+      difficulty: r.difficulty,
+      sources: r.sources ?? [],
+      lat: r.sites.lat,
+      lng: r.sites.lng,
+      addressText: r.sites.address_text,
+      neighbourhood: r.sites.neighbourhood,
+      currentUse: r.sites.current_use,
+      notes: r.sites.notes,
+    },
+  }));
+}
+
+/** Applies re-imported changes to existing places. Status and verification are left alone. */
+export async function updatePlaces(items: { id: string; siteId: string; place: PlaceInput }[]): Promise<number> {
+  for (const i of items) await savePlace(i.id, i.siteId, i.place);
+  return items.length;
 }

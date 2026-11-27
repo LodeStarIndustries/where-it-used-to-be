@@ -78,7 +78,9 @@ describe("CSV checking (the dry run)", () => {
     const text = `${header}\nTEST: Nope,bar,,,,,,,,,,,,,,,,,\nTwice,bar,,,,,,,,,,,,,,,,,\ntwice,bar,,,,,,,,,,,,,,,,,`;
     const result = checkCsv(text, { allowTestNames: false });
     expect(result.rows[0].errors).toContain("TEST: names can't go into this database.");
-    expect(result.rows[2].warnings).toContain("Same name as line 3 in this file.");
+    expect(result.rows[2].errors[0]).toMatch(/^Same name as line 3 in this file\./);
+    expect(result.rows[2].place).toBeNull();
+    expect(result.rows[1].place).not.toBeNull();
   });
 
   it("needs name and category columns", () => {
