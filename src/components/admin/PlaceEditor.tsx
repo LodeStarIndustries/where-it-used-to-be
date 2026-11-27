@@ -18,7 +18,13 @@ import { liveBlockers, type SourceInput } from "@/lib/admin/place-schema";
 import { streetFromAddress } from "@/lib/game/geo";
 import { EraCard } from "@/components/era-card/EraCard";
 import { categoryLabel } from "@/components/game/labels";
-import { PinMap, type LatLngValue, type OtherSite } from "@/components/map/PinMap";
+import dynamic from "next/dynamic";
+import type { LatLngValue, OtherSite } from "@/components/map/PinMap";
+// The map (MapLibre, about 1 MB) loads only when this screen shows it, not when a link to the page is prefetched.
+const PinMap = dynamic(() => import("@/components/map/PinMap").then((m) => m.PinMap), {
+  ssr: false,
+  loading: () => <div className="h-full w-full bg-map-land" aria-hidden="true" />,
+});
 import {
   Pill,
   adminButton,

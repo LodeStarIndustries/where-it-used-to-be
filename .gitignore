@@ -51,3 +51,7 @@ next-env.d.ts
 
 # Google OAuth client downloads hold a secret: never commit them
 client_secret_*.json
+
+# Playwright
+/test-results/
+/playwright-report/

@@ -287,12 +287,19 @@ A sample file with three `TEST:` rows is in `samples/places-sample.csv` (dev dat
 
 Vercel sets `VERCEL_ENV` itself; the app uses it to tell production from previews.
 
+## Launch
+
+See [LAUNCH.md](LAUNCH.md) for the launch checklist.
+
 ## Everyday commands
 
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Run the app at <http://localhost:3000> against the dev database |
 | `npm test` | Unit tests plus the database tests (an in-memory Postgres, no Docker or internet needed) |
+| `npm run test:e2e` | Browser tests at phone size: plays a full day, and runs accessibility checks on every page. Starts the dev server if it isn't running. Signed-in checks use the dev `TEST:` account. First time only: `npx playwright install chromium` |
+| `node scripts/perf-check.mjs http://localhost:3100` | Load times and download sizes on a throttled phone. Run `npm run build && npx next start -p 3100` first |
+| `node scripts/make-placeholder-icons.mjs` | Rebuild the placeholder app icons (until the final artwork replaces them) |
 | `npm run typecheck` | Type-check everything |
 | `npm run db:push:dev` | Apply new migrations to dev |
 | `npm run db:push:prod` | Apply new migrations to production (asks first) |

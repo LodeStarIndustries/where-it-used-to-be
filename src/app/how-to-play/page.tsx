@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { MapAttribution } from "@/components/ui/MapAttribution";
 import { game, maxPointsPerDay } from "@config/game";
+import { verdictColour } from "@/lib/game/verdict-colours";
 
 export const metadata: Metadata = {
   title: "How to play · Where It Used To Be",
 };
 
-// Placeholder copy for Mike to replace (Milestone 5 polishes this page).
+// Placeholder copy for Mike to replace.
 export default function HowToPlay() {
   return (
     <main className="mx-auto w-full max-w-[430px] px-4 pb-12 pt-6">
@@ -32,13 +34,25 @@ export default function HowToPlay() {
           Each round is final once you submit it. The best possible day is {maxPointsPerDay.toLocaleString("en-CA")}{" "}
           points. Play every day to build your streak.
         </p>
+        <div>
+          <p>Each round gets a verdict, and the share squares use the same colours:</p>
+          <ul className="mt-2 space-y-1.5">
+            {game.verdicts.map((v) => (
+              <li key={v.key} className="flex items-center gap-2.5">
+                <span className="block h-3.5 w-3.5 shrink-0 rounded-full" style={{ background: verdictColour[v.key] }} aria-hidden="true" />
+                <span>
+                  <strong className="text-ink">{v.label}</strong>{" "}
+                  {v.minPoints === 0 ? "no points" : `${v.minPoints}+ points`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
         <p>
           On a keyboard, focus the map, move it with the arrow keys, and press Enter to drop your pin at the centre.
         </p>
       </div>
-      <p className="mt-8 text-[12px] text-secondary">
-        Map data © OpenStreetMap contributors, served by OpenFreeMap with OpenMapTiles.
-      </p>
+      <MapAttribution />
     </main>
   );
 }
