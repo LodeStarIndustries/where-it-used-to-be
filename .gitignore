@@ -48,3 +48,6 @@ next-env.d.ts
 
 # Copied from node_modules by scripts/copy-maplibre-worker.mjs
 /public/maplibre/
+
+# Google OAuth client downloads hold a secret: never commit them
+client_secret_*.json
