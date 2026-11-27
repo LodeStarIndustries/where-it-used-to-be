@@ -140,7 +140,7 @@ export function checkCsv(text: string, opts: { allowTestNames: boolean }): CsvCh
       errors.push("TEST: names can't go into this database.");
     }
     const key = name.toLowerCase();
-    if (key && seen.has(key)) warnings.push(`Same name as line ${seen.get(key)} in this file.`);
+    if (key && seen.has(key)) errors.push(`Same name as line ${seen.get(key)} in this file. Names must be unique, since that's how re-imports find the place.`);
     else if (key) seen.set(key, line);
     if (result.ok && result.place.lat === null) warnings.push("Needs a pin: no coordinates.");
 

@@ -234,11 +234,20 @@ Admin rights are checked on the server for every admin route, and players can't 
 
 Once your account is an admin (step 12), the home page shows an **Admin** link, or go to `/admin`. Everyone else gets a "page not found" there, and every admin action checks your rights on the server.
 
-**Getting the starter list in**
+**Getting the starter list in, and keeping it up to date**
 
-1. In the Google Sheet: **File → Download → Comma-separated values (.csv)**.
-2. **Admin → Import & export**: choose the file and press **Check the file**. Nothing is saved yet. You see every row with its errors (skipped) and warnings ("needs a pin", "a place with this name already exists"). The sheet's extra columns (`verified_by_mike`, `import_check`, `checked_from`) are ignored. If a row's coordinates are within 30 m of an existing site, you can choose to share that site.
-3. Press **Import**. Every row becomes a **draft**.
+The master Google Sheet is the source of truth. Import straight from it whenever it changes:
+
+1. Once: in the sheet, **Share → General access → Anyone with the link → Viewer**. (Anyone who has the link can read the list, so don't post it anywhere. The repo is public, so the link is never stored in the code; your browser remembers it on the import page.)
+2. Open the tab with your places and copy the address from the browser.
+3. **Admin → Import & export**: paste the link and press **Check the sheet**. Nothing is saved yet. Each row shows what will happen:
+   - **New draft**: a name that isn't in the database yet. If its coordinates are within 30 m of an existing site, you can choose to share that site.
+   - **Update**: a place that's already here (matched by name, capitals ignored), with the fields that will change. Its status (draft, live, retired) and verification don't change. A blank cell never erases anything, so pins you dropped in the admin stay when the sheet has no coordinates.
+   - **No change**, or **Skipped** with the errors to fix in the sheet. Each name may appear only once.
+   - The sheet's extra columns (`verified_by_mike`, `import_check`, `checked_from`) are ignored.
+4. Press the import button (it says how many it will add and update).
+
+Renaming a place in the sheet makes a new draft rather than renaming the old one: rename it in the admin too. A CSV file still works the same way (**Or use a CSV file** on the import page).
 
 **From draft to live** (Admin → Places, filter **Needs a pin**)
 
@@ -260,7 +269,7 @@ Once your account is an admin (step 12), the home page shows an **Admin** link, 
 
 - Players' photos and yours are JPG or PNG up to 5 MB. Phones shrink them before upload; the server then re-encodes every photo, which removes location (GPS) and camera details. They're stored in the private `photos` bucket and shown to admins through links that expire after 30 minutes. Players don't see photos in the game yet.
 
-**Export**: Import & export → **Download places.csv** writes every place in the import's columns.
+**Export**: Import & export → **Download places.csv** writes every place in the import's columns, including pins dropped in the admin, so you can copy coordinates back into the sheet.
 
 A sample file with three `TEST:` rows is in `samples/places-sample.csv` (dev database only: production refuses `TEST:` names).
 

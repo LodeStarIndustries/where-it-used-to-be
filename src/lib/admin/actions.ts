@@ -9,6 +9,8 @@ import { game } from "@config/game";
 import { NotEnoughPlacesError, generateDays, wrongAnswersFor, type GeneratedRound } from "@/lib/game/generator";
 import { addDays, puzzleDateFor } from "@/lib/puzzle-date";
 import { checkCsv } from "./csv";
+import { fetchSheetCsv, SheetError } from "./sheet";
+import { planImport, type PlannedRow } from "./sync";
 import {
   draftFromSubmission,
   getSubmission,
@@ -25,8 +27,9 @@ import {
   refreshLastUsed,
   updatePuzzle,
   allowsTestNames,
-  existingNames,
   importPlaces,
+  placesForSync,
+  updatePlaces,
   createPlace,
   deleteDraft,
   getPlace,
@@ -159,8 +162,13 @@ export async function deleteDraftAction(placeId: string, siteId: string): Promis
 export interface ImportPreviewRow {
   line: number;
   name: string;
+  /** new: becomes a draft. update: changes an existing place. same: nothing to do. error: skipped. */
+  kind: PlannedRow["kind"];
+  /** For updates, which fields change. */
+  changes: string[];
   errors: string[];
   warnings: string[];
+  /** For new rows, existing sites within 30 m it could share. */
   nearby: NearbySite[];
 }
 
@@ -172,54 +180,83 @@ export interface ImportPreview {
 
 const MAX_CSV = 2_000_000;
 
-/** The dry run: checks every row and writes nothing. */
+/** Downloads a Google Sheet tab (shared as "Anyone with the link") as CSV text for the import. */
+export async function fetchSheetAction(link: string): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+  await assertAdmin();
+  if (typeof link !== "string" || link.length > 2000) return { ok: false, error: "That link is too long." };
+  try {
+    return { ok: true, text: await fetchSheetCsv(link) };
+  } catch (err) {
+    return { ok: false, error: err instanceof SheetError ? err.message : "Couldn't read the sheet. Try again." };
+  }
+}
+
+async function planFor(text: string) {
+  const [checked, existing] = await Promise.all([
+    allowsTestNames().then((allowTestNames) => checkCsv(text, { allowTestNames })),
+    placesForSync(),
+  ]);
+  return { checked, plan: checked.fileErrors.length ? [] : planImport(checked.rows, existing) };
+}
+
+/** The dry run: checks every row against the database and writes nothing. */
 export async function previewImportAction(text: string): Promise<ImportPreview> {
   await assertAdmin();
   if (typeof text !== "string" || text.length > MAX_CSV) {
     return { fileErrors: ["That file is too big. Split it into smaller files."], ignoredColumns: [], rows: [] };
   }
-  const result = checkCsv(text, { allowTestNames: await allowsTestNames() });
-  const names = result.rows.filter((r) => r.place).map((r) => r.name);
-  const [taken, nearbyLists] = await Promise.all([
-    existingNames(names),
-    Promise.all(
-      result.rows.map((r) =>
-        r.place?.lat != null && r.place.lng != null ? sitesNear(r.place.lat, r.place.lng) : Promise.resolve([]),
-      ),
+  const { checked, plan } = await planFor(text);
+  const nearbyLists = await Promise.all(
+    plan.map((r) =>
+      r.kind === "new" && r.place.lat != null && r.place.lng != null ? sitesNear(r.place.lat, r.place.lng) : Promise.resolve([]),
     ),
-  ]);
+  );
   return {
-    fileErrors: result.fileErrors,
-    ignoredColumns: result.ignoredColumns,
-    rows: result.rows.map((r, i) => ({
+    fileErrors: checked.fileErrors,
+    ignoredColumns: checked.ignoredColumns,
+    rows: plan.map((r, i) => ({
       line: r.line,
       name: r.name,
-      errors: r.errors,
-      warnings: taken.has(r.name) ? [...r.warnings, "A place with this exact name already exists."] : r.warnings,
+      kind: r.kind,
+      changes: r.kind === "update" ? r.changes : [],
+      errors: r.kind === "error" ? r.errors : [],
+      warnings: r.warnings,
       nearby: nearbyLists[i],
     })),
   };
 }
 
-/** Imports every valid row as a draft. attach maps a line number to an existing site to share. */
+/**
+ * Adds new rows as drafts and applies changes to existing places. The plan is
+ * worked out again here from the same text, so the browser can't change what's
+ * written. attach maps a new row's line number to an existing site to share.
+ */
 export async function commitImportAction(
   text: string,
   attach: Record<number, string>,
-): Promise<{ ok: true; created: number; skipped: number } | { ok: false; errors: string[] }> {
+): Promise<{ ok: true; created: number; updated: number; unchanged: number; skipped: number } | { ok: false; errors: string[] }> {
   const userId = await assertAdmin();
   if (typeof text !== "string" || text.length > MAX_CSV) return { ok: false, errors: ["That file is too big."] };
-  const result = checkCsv(text, { allowTestNames: await allowsTestNames() });
-  if (result.fileErrors.length) return { ok: false, errors: result.fileErrors };
-  const valid = result.rows.filter((r) => r.place);
-  const items = valid.map((r) => {
+  const { checked, plan } = await planFor(text);
+  if (checked.fileErrors.length) return { ok: false, errors: checked.fileErrors };
+  const items = plan.flatMap((r) => {
+    if (r.kind !== "new") return [];
     const site = attach?.[r.line];
-    return { place: r.place!, attachSiteId: site && uuid.safeParse(site).success ? site : undefined };
+    return [{ place: r.place, attachSiteId: site && uuid.safeParse(site).success ? site : undefined }];
   });
+  const updates = plan.flatMap((r) => (r.kind === "update" ? [{ id: r.id, siteId: r.siteId, place: r.place }] : []));
   try {
+    const updated = await updatePlaces(updates);
     const created = await importPlaces(items, userId);
     revalidatePath("/admin");
     revalidatePath("/admin/places");
-    return { ok: true, created, skipped: result.rows.length - valid.length };
+    return {
+      ok: true,
+      created,
+      updated,
+      unchanged: plan.filter((r) => r.kind === "same").length,
+      skipped: plan.filter((r) => r.kind === "error").length,
+    };
   } catch (err) {
     const f = failure(err);
     return f.ok ? { ok: false, errors: ["Import failed."] } : f;
